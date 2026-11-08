@@ -14,7 +14,15 @@ approximations:
   the ● detail sections and the code frames are all as jest printed
   them.
 """
-from swarm_agent.runner import detect_test_command, parse_failures
+import os
+import sys
+
+from swarm_agent.runner import (
+    _python_command_env,
+    detect_test_command,
+    parse_failures,
+    run_tests,
+)
 
 
 PYTEST_OUTPUT = """
@@ -324,3 +332,65 @@ def test_detect_default_and_degradation(tmp_path):
     # A marker that is a directory, not a file, does not count.
     (tmp_path / "go.mod").mkdir()
     assert detect_test_command(tmp_path) == "python -m pytest -q"
+
+
+# --- stale __pycache__ (Issue #26) ------------------------------------------
+# The verify step must never execute bytecode for code that is no
+# longer on disk. The regression test below reproduces the exact
+# trap: a patch that preserves the file's size and lands in the same
+# second as the previous write leaves the old .pyc looking fresh
+# (mtime+size match), so a plain pytest run executes the OLD module.
+
+def test_verify_run_never_executes_stale_pycache(tmp_path):
+    buggy = "def add(a, b):\n    return a - b\n"
+    fixed = "def add(a, b):\n    return a + b\n"
+    assert len(buggy) == len(fixed)  # the patch is size-preserving
+    mod = tmp_path / "calc.py"
+    mod.write_text(buggy, encoding="utf-8")
+    (tmp_path / "test_calc.py").write_text(
+        "from calc import add\n\n\ndef test_add():\n    assert add(2, 3) == 5\n",
+        encoding="utf-8",
+    )
+    cmd = f"{sys.executable} -m pytest -q"
+    code, _ = run_tests(cmd, tmp_path)
+    assert code != 0  # the bug is present: add(2, 3) == -1
+    # Patch with the same size, stamped back to the original write's
+    # exact mtime, so a .pyc written by the first run would still
+    # look fresh to the second run.
+    mtime_ns = mod.stat().st_mtime_ns
+    mod.write_text(fixed, encoding="utf-8")
+    os.utime(mod, ns=(mtime_ns, mtime_ns))
+    assert mod.stat().st_size == len(buggy)
+    code, tail = run_tests(cmd, tmp_path)
+    assert code == 0, tail
+    # And the verify runs never wrote bytecode at all.
+    assert not list(tmp_path.glob("__pycache__"))
+
+
+def test_bytecode_env_only_for_python_commands(tmp_path):
+    py_code, py_tail = run_tests(
+        f"{sys.executable} -c \"import os; print(os.environ.get('PYTHONDONTWRITEBYTECODE'))\"",
+        tmp_path,
+    )
+    assert py_code == 0
+    assert py_tail.strip() == "1"
+    sh_code, sh_tail = run_tests(
+        "sh -c 'echo \"[$PYTHONDONTWRITEBYTECODE]\"'", tmp_path
+    )
+    assert sh_code == 0
+    assert sh_tail.strip() == "[]"
+
+
+def test_python_command_env_heuristic():
+    env = _python_command_env("python -m pytest -q")
+    assert env is not None and env["PYTHONDONTWRITEBYTECODE"] == "1"
+    assert _python_command_env("pytest -q") is not None
+    assert _python_command_env("/usr/local/bin/python3.12 -m pytest") is not None
+    assert _python_command_env("uv run pytest") is not None
+    assert _python_command_env("npm test") is None
+    assert _python_command_env("go test ./...") is None
+    assert _python_command_env("cargo test") is None
+    # The variable's own name must not trip the detector: a shell
+    # command that merely mentions PYTHONDONTWRITEBYTECODE is not
+    # a Python command.
+    assert _python_command_env("sh -c 'echo \"[$PYTHONDONTWRITEBYTECODE]\"'") is None

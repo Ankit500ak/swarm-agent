@@ -1,12 +1,87 @@
-# Benchmarks — fix benchmark
+# Benchmarks
 
-This directory holds the fix benchmark (issue #11): five tiny repos,
+This directory measures the project's claims, with honest numbers
+only: the harness records what actually ran, and a failed run is
+recorded as failed, never invented or dropped. It holds two
+benchmarks: the analyse benchmark (is the swarm actually faster?)
+and the fix benchmark (can `swarm-agent fix` repair seeded bugs?).
+
+## Analyse benchmark — is the swarm actually faster?
+
+The project's core claim is that splitting analysis across the
+machines on your LAN beats running it on one. This section measures
+that claim.
+
+### Workload
+
+The workload is fixed and pinned: `sample_repo/` is a small Python
+project (4 files — `calc.py`, `store.py`, `cli.py`, `test_calc.py`)
+that analyses into **16 chunks** at the default 1500-token budget.
+It never changes between runs, so 1-peer and 3-peer numbers are
+comparable. The chunk count is pinned by a test
+(`tests/test_benchmarks.py`).
+
+The workload is the real `analyze` flow
+(`swarm_agent.agent.analyze_flow`): chunk summaries fanned out
+across the swarm, then one synthesis call on the fastest peer. Wall
+time covers the whole call, including synthesis.
+
+### How to run
+
+From the repo root, with Ollama peers up and serving the model:
+
+```bash
+python benchmarks/bench.py --peers http://localhost:11434,http://192.168.1.5:11434,http://192.168.1.6:11434
+```
+
+- `--peers` takes comma-separated Ollama peer URLs. It can also come
+  from the `SWARM_PEERS` environment variable; with neither, the
+  harness uses the default peer `http://localhost:11434`.
+- `--model` selects the model (default `qwen2.5-coder:7b`).
+- `--max-peers` caps the comparison (default 3).
+
+The harness runs the workload with the first 1 peer, then the first
+2, then the first 3, and appends one row per run to `RESULTS.md`.
+
+### Reading the results
+
+| column | meaning |
+|---|---|
+| date | when the run happened (local time) |
+| machine | chip + memory of the machine that ran the benchmark |
+| model | model requested from the peers |
+| ollama peers | how many Ollama peers were configured for the run |
+| wall (s) | wall time of the whole `analyze` call |
+| chunks | chunks actually summarised (distributor counts summed) |
+| chunks/min | chunks ÷ wall time, in minutes |
+| per-peer tasks | `host:count` pairs in peer order — who did how much work |
+
+### Methodology notes
+
+- **Machines, models, network:** the table records the machine and
+  the model for every row. The network is the LAN the peers sit on;
+  record the setup (wired vs Wi-Fi, which machines) alongside the
+  run, because a slow link swamps the peer-count effect. No runs
+  have been recorded yet — the table is empty until the first real
+  run on hardware with Ollama peers.
+- **MLX joins automatically:** `discover()` adds an MLX peer when a
+  server is listening on `localhost:8080`. It will show up in the
+  per-peer column. Stop the MLX server for a pure Ollama comparison.
+- **The distributor picks by latency:** a fast peer gets more chunks
+  (latency-weighted scheduling), so per-peer counts are rarely even —
+  that is the system working, not noise. Re-run a row before
+  concluding a peer is slow: the first run also warms the model.
+- **Reproduce a row:** same sample repo, same peer list order, same
+  model, peers already warm (`ollama pull` the model on each peer
+  first), then run the command above.
+
+## Fix benchmark — seeded-bug repos
+
+This section holds the fix benchmark (issue #11): five tiny repos,
 each with one seeded bug, fixed by `swarm-agent fix --apply` against
-a local model. (The analyse benchmark — 1 vs 2 vs 3 peers — lives
-here too once its own PR lands; its methodology will be documented
-in this README alongside this section.)
+a local model.
 
-## The five repos
+### The five repos
 
 | Repo | Bug | Tests |
 |---|---|---|
@@ -24,7 +99,7 @@ symptom, not the answer. Each repo's fix was proven in a scratch
 copy before it was added: the intended one-line (or few-line) fix
 makes its tests pass.
 
-## How to run
+### How to run
 
 From the repo root, with an Ollama peer up and serving the model:
 
@@ -46,7 +121,7 @@ failure, pipes the failure to `swarm-agent fix --apply`, and then
 independently re-runs the tests. Results are appended to
 `FIX_RESULTS.md`.
 
-## Reading the results
+### Reading the results
 
 | column | meaning |
 |---|---|
@@ -59,7 +134,7 @@ independently re-runs the tests. Results are appended to
 | machine | chip + memory of the machine that ran the benchmark |
 | notes | why a run failed, if it did |
 
-## Methodology notes
+### Methodology notes
 
 - **The outcome is grounded in the independent re-run**, not in
   what the fix run claimed. If the fix exits 0 while the tests

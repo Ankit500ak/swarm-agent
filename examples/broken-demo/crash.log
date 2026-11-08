@@ -1,0 +1,72 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.2.0, pluggy-1.7.0
+rootdir: /home/hatch/workspace/swarm-agent-ankit/examples/broken-demo
+configfile: pytest.ini
+testpaths: tests
+collected 3 items
+
+tests/test_demo.py FFF                                                   [100%]
+
+=================================== FAILURES ===================================
+_________________________________ test_average _________________________________
+
+    def test_average():
+>       assert summarize(DATA)["average"] == 87.6
+               ^^^^^^^^^^^^^^^
+
+tests/test_demo.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+path = PosixPath('/home/hatch/workspace/swarm-agent-ankit/examples/broken-demo/data.json')
+
+    def summarize(path="data.json"):
+        """Summarise the scores in ``path`` as a dict."""
+        data = json.loads(Path(path).read_text())
+>       scores = data["score"]
+                 ^^^^^^^^^^^^^
+E       KeyError: 'score'
+
+demo.py:15: KeyError
+__________________________________ test_best ___________________________________
+
+    def test_best():
+>       assert summarize(DATA)["best"] == 95
+               ^^^^^^^^^^^^^^^
+
+tests/test_demo.py:19: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+path = PosixPath('/home/hatch/workspace/swarm-agent-ankit/examples/broken-demo/data.json')
+
+    def summarize(path="data.json"):
+        """Summarise the scores in ``path`` as a dict."""
+        data = json.loads(Path(path).read_text())
+>       scores = data["score"]
+                 ^^^^^^^^^^^^^
+E       KeyError: 'score'
+
+demo.py:15: KeyError
+__________________________________ test_count __________________________________
+
+    def test_count():
+>       assert summarize(DATA)["count"] == 5
+               ^^^^^^^^^^^^^^^
+
+tests/test_demo.py:23: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+path = PosixPath('/home/hatch/workspace/swarm-agent-ankit/examples/broken-demo/data.json')
+
+    def summarize(path="data.json"):
+        """Summarise the scores in ``path`` as a dict."""
+        data = json.loads(Path(path).read_text())
+>       scores = data["score"]
+                 ^^^^^^^^^^^^^
+E       KeyError: 'score'
+
+demo.py:15: KeyError
+=========================== short test summary info ============================
+FAILED tests/test_demo.py::test_average - KeyError: 'score'
+FAILED tests/test_demo.py::test_best - KeyError: 'score'
+FAILED tests/test_demo.py::test_count - KeyError: 'score'
+============================== 3 failed in 0.04s ===============================

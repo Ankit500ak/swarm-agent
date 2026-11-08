@@ -14,12 +14,55 @@ Two jobs live here:
 from __future__ import annotations
 
 import json
+import os
 import re
+import shlex
 import subprocess
 from pathlib import Path
 
 TAIL_CHARS = 4000
 _MAX_MESSAGE_CHARS = 500
+
+
+def _python_command_env(command: str) -> dict | None:
+    """Environment for a Python test command, or None for other ecosystems.
+
+    Python commands run with ``PYTHONDONTWRITEBYTECODE=1``. Issue #26:
+    a verify run that writes ``__pycache__`` can later execute stale
+    bytecode — if a patch preserves a file's size and lands in the same
+    second as the previous write, the old ``.pyc`` still looks fresh
+    (mtime+size match) and the test run reports on code no longer on
+    disk. The verify runs never create the stale entry if they never
+    write bytecode at all. Non-Python commands get no extra env, so
+    their behaviour is unchanged.
+
+    Detection is by the program being run, not by substring: the
+    command is tokenised and a token whose basename is ``python*``,
+    ``pytest`` or ``pypy*`` marks it Python. A bare substring test
+    would misfire on e.g. ``$PYTHONDONTWRITEBYTECODE`` itself. If the
+    command cannot be tokenised, fall back to the substring test.
+
+    Note the limit: this stops the loop creating stale entries itself.
+    A ``.pyc`` left behind by a run *outside* run_tests (e.g. a manual
+    pytest) can still be read — clearing the target's ``__pycache__``
+    would fix that too, but it deletes files the user may own, so it
+    is not done here.
+    """
+    try:
+        tokens = shlex.split(command)
+    except ValueError:
+        lowered = command.lower()
+        is_python = "pytest" in lowered or "python" in lowered
+    else:
+        is_python = any(
+            os.path.basename(token).lower().startswith(("python", "pytest", "pypy"))
+            for token in tokens
+        )
+    if not is_python:
+        return None
+    env = dict(os.environ)
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    return env
 
 
 def run_tests(
@@ -30,6 +73,9 @@ def run_tests(
     """Run ``command`` in ``cwd``; return (exit_code, tail of combined output).
 
     A timeout returns exit code 124 with whatever output was captured.
+    Python test commands run with ``PYTHONDONTWRITEBYTECODE=1`` (see
+    :func:`_python_command_env`, issue #26) so a verify run never
+    writes — and later executes — stale bytecode.
     """
     try:
         proc = subprocess.run(
@@ -40,6 +86,7 @@ def run_tests(
             stderr=subprocess.STDOUT,
             text=True,
             timeout=timeout,
+            env=_python_command_env(command),
         )
         return proc.returncode, (proc.stdout or "")[-TAIL_CHARS:]
     except subprocess.TimeoutExpired as exc:

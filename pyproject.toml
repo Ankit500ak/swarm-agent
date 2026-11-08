@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "swarm-agent"
+version = "0.1.0"
+description = "Terminal-native coding agent that distributes inference across Ollama peers on your local network - your code never leaves the LAN."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "Ankit Pal" },
+]
+keywords = ["cli", "coding-agent", "ollama", "llm", "local-ai", "mlx", "privacy"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development",
+]
+
+[project.scripts]
+swarm-agent = "swarm_agent.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["swarm_agent*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

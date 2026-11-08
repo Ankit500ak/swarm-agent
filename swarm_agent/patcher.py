@@ -13,12 +13,39 @@ from __future__ import annotations
 import os
 import re
 import tempfile
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
 
 class PatchError(Exception):
     """The diff is malformed, or its context does not match the files."""
+
+
+@dataclass
+class FileChange:
+    """One file's outcome inside a (possibly multi-file) patch."""
+
+    path: str  # relative to the repo root, as named in the diff
+    hunks_applied: int  # hunks verified (and, unless dry-run, written)
+    action: str  # "modified" | "created" | "deleted"
+
+
+@dataclass
+class MultiFileResult:
+    """Structured outcome of :func:`apply_multi_file_diff`.
+
+    ``files`` has one :class:`FileChange` per file section in the diff, in
+    diff order. On any verification failure no result is returned at all -
+    :class:`PatchError` is raised and nothing is written.
+    """
+
+    files: list[FileChange] = field(default_factory=list)
+    dry_run: bool = False
+
+    @property
+    def changed_paths(self) -> list[str]:
+        return [f.path for f in self.files]
 
 
 _HUNK_RE = re.compile(r"^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@")
@@ -182,6 +209,66 @@ def _atomic_write(target: Path, content: str) -> None:
         raise
 
 
+# A planned change: (target, new content | None = delete, rel path,
+# hunks in the file's section, action).
+_Planned = tuple[Path, Optional[str], str, int, str]
+
+
+def _plan_changes(root: Path, patches: list[_FilePatch]) -> list[_Planned]:
+    """Phase 1 of every apply: verify *every* hunk of *every* file against
+    the current contents and compute the new contents fully in memory.
+
+    Nothing is written here. Any mismatch raises :class:`PatchError`, so a
+    caller that plans first and writes second can never leave a
+    half-applied diff behind because of a stale hunk.
+    """
+    planned: list[_Planned] = []
+    for patch in patches:
+        rel = patch.new_path if patch.new_path is not None else patch.old_path
+        assert rel is not None
+        hunks = len(patch.hunks)
+        if patch.old_path is None:  # creation (--- /dev/null)
+            target = _resolve(root, patch.new_path)  # type: ignore[arg-type]
+            if target.exists() and target.read_text(encoding="utf-8", errors="replace").strip():
+                raise PatchError(f"cannot create {rel}: file already exists")
+            new_lines = _apply_to_lines([], patch, rel)
+            content = "\n".join(new_lines) + ("\n" if new_lines else "")
+            planned.append((target, content, rel, hunks, "created"))
+        elif patch.new_path is None:  # deletion (+++ /dev/null)
+            target = _resolve(root, patch.old_path)
+            if not target.exists():
+                raise PatchError(f"cannot delete {rel}: file does not exist")
+            current = target.read_text(encoding="utf-8", errors="replace").splitlines()
+            remaining = _apply_to_lines(current, patch, rel)
+            if any(line.strip() for line in remaining):
+                raise PatchError(f"deletion diff for {rel} leaves content behind")
+            planned.append((target, None, rel, hunks, "deleted"))
+        else:
+            target = _resolve(root, patch.new_path)
+            if not target.exists():
+                raise PatchError(f"cannot patch {rel}: file does not exist")
+            original = target.read_text(encoding="utf-8", errors="replace")
+            new_lines = _apply_to_lines(original.splitlines(), patch, rel)
+            content = "\n".join(new_lines)
+            if new_lines:
+                content += "\n"
+            planned.append((target, content, rel, hunks, "modified"))
+    return planned
+
+
+def _write_plan(planned: list[_Planned]) -> None:
+    """Phase 2: write a fully verified plan. Each file is replaced
+    atomically; the plan as a whole is not transactional - a failure
+    *while writing* (disk error, permissions) can still leave earlier
+    files written. Verification failures can never reach this phase.
+    """
+    for target, content, _rel, _hunks, _action in planned:
+        if content is None:
+            target.unlink()
+        else:
+            _atomic_write(target, content)
+
+
 def apply_unified_diff(
     repo_root: str | Path,
     diff_text: str,
@@ -194,46 +281,42 @@ def apply_unified_diff(
     the verification runs but no file is written. Returns the list of
     changed paths (relative to the repo root, as named in the diff).
     """
-    root = Path(repo_root)
-    patches = _parse(diff_text)
-
-    # Phase 1: compute every file's new content in memory.
-    planned: list[tuple[Path, Optional[str], str]] = []  # (target, content|None=delete, rel)
-    for patch in patches:
-        rel = patch.new_path if patch.new_path is not None else patch.old_path
-        assert rel is not None
-        if patch.old_path is None:  # creation
-            target = _resolve(root, patch.new_path)  # type: ignore[arg-type]
-            if target.exists() and target.read_text(encoding="utf-8", errors="replace").strip():
-                raise PatchError(f"cannot create {rel}: file already exists")
-            new_lines = _apply_to_lines([], patch, rel)
-            planned.append((target, "\n".join(new_lines) + ("\n" if new_lines else ""), rel))
-        elif patch.new_path is None:  # deletion
-            target = _resolve(root, patch.old_path)
-            if not target.exists():
-                raise PatchError(f"cannot delete {rel}: file does not exist")
-            current = target.read_text(encoding="utf-8", errors="replace").splitlines()
-            remaining = _apply_to_lines(current, patch, rel)
-            if any(line.strip() for line in remaining):
-                raise PatchError(f"deletion diff for {rel} leaves content behind")
-            planned.append((target, None, rel))
-        else:
-            target = _resolve(root, patch.new_path)
-            if not target.exists():
-                raise PatchError(f"cannot patch {rel}: file does not exist")
-            original = target.read_text(encoding="utf-8", errors="replace")
-            new_lines = _apply_to_lines(original.splitlines(), patch, rel)
-            content = "\n".join(new_lines)
-            if new_lines:
-                content += "\n"
-            planned.append((target, content, rel))
-
-    # Phase 2: write (unless this is a dry run).
+    planned = _plan_changes(Path(repo_root), _parse(diff_text))
     if not dry_run:
-        for target, content, _rel in planned:
-            if content is None:
-                target.unlink()
-            else:
-                _atomic_write(target, content)
+        _write_plan(planned)
+    return [rel for _t, _c, rel, _h, _a in planned]
 
-    return [rel for _t, _c, rel in planned]
+
+def apply_multi_file_diff(
+    repo_root: str | Path,
+    diff_text: str,
+    dry_run: bool = False,
+) -> MultiFileResult:
+    """Apply a (possibly multi-file) ``diff_text`` under ``repo_root``,
+    all-or-nothing.
+
+    Every file section is parsed, then *every* hunk of *every* file is
+    verified against the current contents in memory. If any file fails
+    verification, :class:`PatchError` is raised and **nothing is
+    written** - not even the files that verified cleanly. Only when the
+    whole diff verifies is each file written (atomically per file).
+
+    New files (``--- /dev/null``) are created and files whose section
+    ends in ``+++ /dev/null`` are deleted, provided the deletion's hunks
+    consume the file's entire content.
+
+    Returns a :class:`MultiFileResult` with one :class:`FileChange` per
+    file section (``path``, ``hunks_applied``, ``action``). With
+    ``dry_run=True`` the full verification runs but no file is written
+    or deleted.
+    """
+    planned = _plan_changes(Path(repo_root), _parse(diff_text))
+    if not dry_run:
+        _write_plan(planned)
+    return MultiFileResult(
+        files=[
+            FileChange(path=rel, hunks_applied=hunks, action=action)
+            for _t, _c, rel, hunks, action in planned
+        ],
+        dry_run=dry_run,
+    )

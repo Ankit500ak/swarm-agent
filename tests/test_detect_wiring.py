@@ -1,1 +1,394 @@
-base64:IiIiVGVzdC1jb21tYW5kIHdpcmluZyAoaXNzdWUgIzMxKTogdGhlIHZlcmlmeSBzdGVwcyByZXNvbHZlIHRoZWlyCmNvbW1hbmQgdGhyb3VnaCBgYWdlbnQuX3ZlcmlmeV9jb21tYW5kYCwgd2hpY2ggd2lyZXMKYHJ1bm5lci5kZXRlY3RfdGVzdF9jb21tYW5kYCBpbnRvIHRoZSBmbG93cy4KClByZWNlZGVuY2UgdW5kZXIgdGVzdCAoZG9jdW1lbnRlZCBvbiBgX3ZlcmlmeV9jb21tYW5kYCk6CgoxLiBhbiBleHBsaWNpdCBwZXItcnVuIGBgdGVzdF9jbWRgYCB3aW5zIHZlcmJhdGltOwoyLiBhICpjdXN0b21pc2VkKiBgYGNvbmZpZy50ZXN0X2NvbW1hbmRgYCAoYW55dGhpbmcgYnV0IHRoZSBidWlsdC1pbgogICBkZWZhdWx0IC0gaW5jbHVkaW5nIGBgTm9uZWBgL2BgIiJgYCwgdmVyaWZpY2F0aW9uIG9mZikgYmVhdHMKICAgZGV0ZWN0aW9uOwozLiBkZXRlY3Rpb24gcGlja3MgZnJvbSB0aGUgcmVwbydzIG1hcmtlcnMsIGZhbGxpbmcgYmFjayB0byB0aGUKICAgZGVmYXVsdCBweXRlc3QgY29tbWFuZCAtIHNvIGEgcGxhaW4gUHl0aG9uIHJlcG8gdmVyaWZpZXMgd2l0aAogICBleGFjdGx5IHRoZSBjb21tYW5kIGl0IHVzZWQgYmVmb3JlIGRldGVjdGlvbiBleGlzdGVkLgoKVGhlIGZpeCBmbG93IHJlc29sdmVzIHRoZSBjb21tYW5kIG9uY2UgYW5kIGhhbmRzIGl0IHRvIHRoZSByZXBhaXIKbG9vcCwgc28gZXZlcnkgdmVyaWZ5IHJ1biBpbiBhIGZpeCB1c2VzIHRoZSBzYW1lIGNvbW1hbmQuCiIiIgoKaW1wb3J0IGhhc2hsaWIKaW1wb3J0IGpzb24KaW1wb3J0IHJlCmltcG9ydCBzeXMKCmZyb20gc3dhcm1fYWdlbnQgaW1wb3J0IGFnZW50LCBwcm9tcHRzCmZyb20gc3dhcm1fYWdlbnQuY29uZmlnIGltcG9ydCBDb25maWcKCgojIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCiMgZmFrZXMgKHNhbWUgc2hhcGUgYXMgdGVzdF9sYW5ndWFnZV93aXJpbmcnczogc2NyaXB0ZWQgY2hhdCArIGZha2UgZW1iZWQpCiMgLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KCmNsYXNzIFNjcmlwdGVkQ2xpZW50OgogICAgIiIiQ2hhdCByZXR1cm5zIHRoZSBuZXh0IGNhbm5lZCByZXBseTsgZW1iZWQgaXMgYmFnLW9mLXdvcmRzLiIiIgoKICAgIERJTSA9IDY0CgogICAgZGVmIF9faW5pdF9fKHNlbGYsIHJlcGxpZXM6IGxpc3Rbc3RyXSk6CiAgICAgICAgc2VsZi5fcmVwbGllcyA9IGxpc3QocmVwbGllcykKCiAgICBkZWYgY2hhdChzZWxmLCBtZXNzYWdlcywgbW9kZWw9Tm9uZSk6CiAgICAgICAgaWYgc2VsZi5fcmVwbGllczoKICAgICAgICAgICAgcmV0dXJuIHNlbGYuX3JlcGxpZXMucG9wKDApCiAgICAgICAgcmV0dXJuICJOT19GSVhfUE9TU0lCTEUiCgogICAgQHN0YXRpY21ldGhvZAogICAgZGVmIF92ZWN0b3IodGV4dDogc3RyKSAtPiBsaXN0W2Zsb2F0XToKICAgICAgICB2ZWMgPSBbMC4wXSAqIFNjcmlwdGVkQ2xpZW50LkRJTQogICAgICAgIGZvciB0b2sgaW4gcmUuZmluZGFsbChyIlthLXowLTlfXSsiLCB0ZXh0Lmxvd2VyKCkpOgogICAgICAgICAgICBidWNrZXQgPSBpbnQuZnJvbV9ieXRlcygKICAgICAgICAgICAgICAgIGhhc2hsaWIubWQ1KHRvay5lbmNvZGUoKSkuZGlnZXN0KClbOjRdLCAibGl0dGxlIgogICAgICAgICAgICApICUgU2NyaXB0ZWRDbGllbnQuRElNCiAgICAgICAgICAgIHZlY1tidWNrZXRdICs9IDEuMAogICAgICAgIHJldHVybiB2ZWMKCiAgICBkZWYgZW1iZWQoc2VsZiwgdGV4dHMsIG1vZGVsPU5vbmUpOgogICAgICAgIHJldHVybiBbc2VsZi5fdmVjdG9yKHQpIGZvciB0IGluIHRleHRzXQoKCmNsYXNzIEZha2VEaXN0cmlidXRvcjoKICAgICIiIlN0YW5kcyBpbiBmb3IgRGlzdHJpYnV0b3I6IGBhc2tgIGNoYXRzLCBgY2xpZW50X2ZvcmAgZW1iZWRzLiIiIgoKICAgIGRlZiBfX2luaXRfXyhzZWxmLCBjbGllbnQ6IFNjcmlwdGVkQ2xpZW50KToKICAgICAgICBzZWxmLl9jbGllbnQgPSBjbGllbnQKICAgICAgICBzZWxmLmFza2VkOiBsaXN0ID0gW10KCiAgICBkZWYgYXNrKHNlbGYsIG1lc3NhZ2VzLCBtb2RlbD1Ob25lKToKICAgICAgICBzZWxmLmFza2VkLmFwcGVuZChtZXNzYWdlcykKICAgICAgICByZXR1cm4gc2VsZi5fY2xpZW50LmNoYXQobWVzc2FnZXMsIG1vZGVsPW1vZGVsKQoKICAgIGRlZiBiZXN0X3BlZXIoc2VsZik6CiAgICAgICAgcmV0dXJuICJmYWtlLXBlZXIiCgogICAgZGVmIGNsaWVudF9mb3Ioc2VsZiwgcGVlcik6CiAgICAgICAgcmV0dXJuIHNlbGYuX2NsaWVudAoKCmRlZiBfaW5zdGFsbChtb25rZXlwYXRjaCwgcmVwbGllcykgLT4gRmFrZURpc3RyaWJ1dG9yOgogICAgZGlzdCA9IEZha2VEaXN0cmlidXRvcihTY3JpcHRlZENsaWVudChyZXBsaWVzKSkKICAgIG1vbmtleXBhdGNoLnNldGF0dHIoYWdlbnQsICJnZXRfZGlzdHJpYnV0b3IiLCBsYW1iZGEgY2ZnOiBkaXN0KQogICAgcmV0dXJuIGRpc3QKCgpkZWYgX2NhcHR1cmVfcnVucyhtb25rZXlwYXRjaCwgcmVzdWx0cz1Ob25lKToKICAgICIiIlJlcGxhY2UgYWdlbnQucnVuX3Rlc3RzIHdpdGggYSByZWNvcmRlci4KCiAgICBSZXR1cm5zIHRoZSBsaXN0IG9mIChjb21tYW5kLCBjd2QpIGl0IHdhcyBjYWxsZWQgd2l0aC4gYGByZXN1bHRzYGAKICAgIHNjcmlwdHMgdGhlIChleGl0X2NvZGUsIHRhaWwpIHJlcGxpZXM7IGRlZmF1bHQgaXMgYSBzaW5nbGUgcGFzcywKICAgIHJlcGVhdGVkIGZvciBhbnkgZnVydGhlciBjYWxscy4KICAgICIiIgogICAgY2FsbHM6IGxpc3QgPSBbXQogICAgc2NyaXB0ZWQgPSBsaXN0KHJlc3VsdHMpIGlmIHJlc3VsdHMgZWxzZSBbKDAsICJhbGwgZ3JlZW4iKV0KCiAgICBkZWYgZmFrZV9ydW5fdGVzdHMoY21kLCByb290KToKICAgICAgICBjYWxscy5hcHBlbmQoKGNtZCwgcm9vdCkpCiAgICAgICAgaWYgbGVuKHNjcmlwdGVkKSA+IDE6CiAgICAgICAgICAgIHJldHVybiBzY3JpcHRlZC5wb3AoMCkKICAgICAgICByZXR1cm4gc2NyaXB0ZWRbMF0KCiAgICBtb25rZXlwYXRjaC5zZXRhdHRyKGFnZW50LCAicnVuX3Rlc3RzIiwgZmFrZV9ydW5fdGVzdHMpCiAgICByZXR1cm4gY2FsbHMKCgpkZWYgX3JlcGx5KGRpZmZfYm9keTogc3RyKSAtPiBzdHI6CiAgICByZXR1cm4gIkhlcmUgaXMgdGhlIGZpeDpcblxuYGBgZGlmZlxuIiArIGRpZmZfYm9keSArICJcbmBgYFxuIgoKCiMgLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KIyBmaXh0dXJlczogb25lIHNtYWxsIGJ1Z2d5IHJlcG8gcGVyIGVjb3N5c3RlbQojIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCgpBUFBfSlMgPSAiZnVuY3Rpb24gYWRkKGEsIGIpIHtcbiAgcmV0dXJuIGEgLSBiO1xufVxuIgoKSlNfRVJST1IgPSAoCiAgICAiRXJyb3I6IGJvb21cbiIKICAgICcgIEZpbGUgImFwcC5qcyIsIGxpbmUgMiwgaW4gYWRkXG4nCiAgICAiICAgIHJldHVybiBhIC0gYjtcbiIKKQoKSlNfRElGRiA9IF9yZXBseSgKICAgICItLS0gYS9hcHAuanNcbiIKICAgICIrKysgYi9hcHAuanNcbiIKICAgICJAQCAtMSwyICsxLDIgQEBcbiIKICAgICIgZnVuY3Rpb24gYWRkKGEsIGIpIHtcbiIKICAgICItICByZXR1cm4gYSAtIGI7XG4iCiAgICAiKyAgcmV0dXJuIGEgKyBiOyIKKQoKQ0FMQ19HTyA9ICJwYWNrYWdlIGNhbGNcbmZ1bmMgQWRkKGEsIGIgaW50KSBpbnQgeyByZXR1cm4gYSAtIGIgfVxuIgoKR09fRVJST1IgPSAoCiAgICAicGFuaWM6IGJvb21cbiIKICAgICcgIEZpbGUgImNhbGMuZ28iLCBsaW5lIDIsIGluIEFkZFxuJwopCgpHT19ESUZGID0gX3JlcGx5KAogICAgIi0tLSBhL2NhbGMuZ29cbiIKICAgICIrKysgYi9jYWxjLmdvXG4iCiAgICAiQEAgLTEsMiArMSwyIEBAXG4iCiAgICAiIHBhY2thZ2UgY2FsY1xuIgogICAgIi1mdW5jIEFkZChhLCBiIGludCkgaW50IHsgcmV0dXJuIGEgLSBiIH1cbiIKICAgICIrZnVuYyBBZGQoYSwgYiBpbnQpIGludCB7IHJldHVybiBhICsgYiB9IgopCgpDQUxDX1BZID0gImRlZiBhZGQoYSwgYik6XG4gICAgcmV0dXJuIGEgLSBiXG4iCgpQWV9FUlJPUiA9ICgKICAgICJUcmFjZWJhY2sgKG1vc3QgcmVjZW50IGNhbGwgbGFzdCk6XG4iCiAgICAnICBGaWxlICJjYWxjLnB5IiwgbGluZSAyLCBpbiBhZGRcbicKICAgICIgICAgcmV0dXJuIGEgLSBiXG4iCiAgICAiVmFsdWVFcnJvcjogYm9vbVxuIgopCgpQWV9ESUZGID0gX3JlcGx5KAogICAgIi0tLSBhL2NhbGMucHlcbiIKICAgICIrKysgYi9jYWxjLnB5XG4iCiAgICAiQEAgLTEsMiArMSwyIEBAXG4iCiAgICAiIGRlZiBhZGQoYSwgYik6XG4iCiAgICAiLSAgICByZXR1cm4gYSAtIGJcbiIKICAgICIrICAgIHJldHVybiBhICsgYiIKKQoKCmRlZiBfanNfcmVwbyh0bXBfcGF0aCk6CiAgICAodG1wX3BhdGggLyAiYXBwLmpzIikud3JpdGVfdGV4dChBUFBfSlMsIGVuY29kaW5nPSJ1dGYtOCIpCiAgICAodG1wX3BhdGggLyAicGFja2FnZS5qc29uIikud3JpdGVfdGV4dCgKICAgICAgICBqc29uLmR1bXBzKHsibmFtZSI6ICJhcHAiLCAic2NyaXB0cyI6IHsidGVzdCI6ICJqZXN0In19KSwKICAgICAgICBlbmNvZGluZz0idXRmLTgiLAogICAgKQogICAgcmV0dXJuIHRtcF9wYXRoCgoKZGVmIF9nb19yZXBvKHRtcF9wYXRoKToKICAgICh0bXBfcGF0aCAvICJjYWxjLmdvIikud3JpdGVfdGV4dChDQUxDX0dPLCBlbmNvZGluZz0idXRmLTgiKQogICAgKHRtcF9wYXRoIC8gImdvLm1vZCIpLndyaXRlX3RleHQoIm1vZHVsZSBjYWxjXG5cbmdvIDEuMjJcbiIsIGVuY29kaW5nPSJ1dGYtOCIpCiAgICByZXR1cm4gdG1wX3BhdGgKCgojIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCiMgKGEpICsgKGIpIGRldGVjdGlvbiByZWFjaGVzIHRoZSBmaXggZmxvdydzIHZlcmlmeSBzdGVwCiMgLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KCmRlZiB0ZXN0X2ZpeF9pbl9qc19yZXBvX3ZlcmlmaWVzX3dpdGhfbnBtX3Rlc3QobW9ua2V5cGF0Y2gsIHRtcF9wYXRoKToKICAgIHJlcG8gPSBfanNfcmVwbyh0bXBfcGF0aCkKICAgIF9pbnN0YWxsKG1vbmtleXBhdGNoLCBbSlNfRElGRl0pCiAgICBydW5zID0gX2NhcHR1cmVfcnVucyhtb25rZXlwYXRjaCkKCiAgICByYyA9IGFnZW50LmZpeF9mbG93KEpTX0VSUk9SLCByZXBvLCBDb25maWcoKSwgYXBwbHk9VHJ1ZSkKCiAgICBhc3NlcnQgcmMgPT0gMAogICAgYXNzZXJ0IHJ1bnMgPT0gWygibnBtIHRlc3QiLCByZXBvKV0KCgpkZWYgdGVzdF9maXhfaW5fZ29fcmVwb192ZXJpZmllc193aXRoX2dvX3Rlc3QobW9ua2V5cGF0Y2gsIHRtcF9wYXRoKToKICAgIHJlcG8gPSBfZ29fcmVwbyh0bXBfcGF0aCkKICAgIF9pbnN0YWxsKG1vbmtleXBhdGNoLCBbR09fRElGRl0pCiAgICBydW5zID0gX2NhcHR1cmVfcnVucyhtb25rZXlwYXRjaCkKCiAgICByYyA9IGFnZW50LmZpeF9mbG93KEdPX0VSUk9SLCByZXBvLCBDb25maWcoKSwgYXBwbHk9VHJ1ZSkKCiAgICBhc3NlcnQgcmMgPT0gMAogICAgYXNzZXJ0IHJ1bnMgPT0gWygiZ28gdGVzdCAuLy4uLiIsIHJlcG8pXQoKCiMgLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KIyB0aGUgcmVwYWlyIGxvb3AgcmV1c2VzIHRoZSBkZXRlY3RlZCBjb21tYW5kIGZvciBldmVyeSB2ZXJpZnkgcnVuCiMgLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KCkFQUF9KU19UV09fQlVHUyA9ICgKICAgICJmdW5jdGlvbiBhZGQoYSwgYikge1xuICByZXR1cm4gYSAtIGI7XG59XG4iCiAgICAiXG4iCiAgICAiZnVuY3Rpb24gc3ViKGEsIGIpIHtcbiAgcmV0dXJuIGEgKyBiO1xufVxuIgopCgpKU19ESUZGXzIgPSBfcmVwbHkoCiAgICAiLS0tIGEvYXBwLmpzXG4iCiAgICAiKysrIGIvYXBwLmpzXG4iCiAgICAiQEAgLTUsMiArNSwyIEBAXG4iCiAgICAiIGZ1bmN0aW9uIHN1YihhLCBiKSB7XG4iCiAgICAiLSAgcmV0dXJuIGEgKyBiO1xuIgogICAgIisgIHJldHVybiBhIC0gYjsiCikKCkpFU1RfVEFJTCA9ICgKICAgICJGQUlMIHRlc3RzL2FwcC50ZXN0LmpzXG4iCiAgICAiICDil48gc3ViIOKAuiBzdWJ0cmFjdHNcbiIKICAgICIgICAgZXhwZWN0KHJlY2VpdmVkKS50b0JlKGV4cGVjdGVkKVxuIgogICAgIiAgICBFeHBlY3RlZDogMlxuIgogICAgIiAgICBSZWNlaXZlZDogOFxuIgopCgoKZGVmIHRlc3RfcmVwYWlyX2xvb3BfdmVyaWZpZXNfd2l0aF90aGVfZGV0ZWN0ZWRfY29tbWFuZCgKICAgIG1vbmtleXBhdGNoLCB0bXBfcGF0aAopOgogICAgKHRtcF9wYXRoIC8gImFwcC5qcyIpLndyaXRlX3RleHQoQVBQX0pTX1RXT19CVUdTLCBlbmNvZGluZz0idXRmLTgiKQogICAgKHRtcF9wYXRoIC8gInBhY2thZ2UuanNvbiIpLndyaXRlX3RleHQoCiAgICAgICAganNvbi5kdW1wcyh7Im5hbWUiOiAiYXBwIiwgInNjcmlwdHMiOiB7InRlc3QiOiAiamVzdCJ9fSksCiAgICAgICAgZW5jb2Rpbmc9InV0Zi04IiwKICAgICkKICAgIF9pbnN0YWxsKG1vbmtleXBhdGNoLCBbSlNfRElGRiwgSlNfRElGRl8yXSkKICAgIHJ1bnMgPSBfY2FwdHVyZV9ydW5zKAogICAgICAgIG1vbmtleXBhdGNoLCByZXN1bHRzPVsoMSwgSkVTVF9UQUlMKSwgKDAsICJhbGwgZ3JlZW4iKV0KICAgICkKCiAgICByYyA9IGFnZW50LmZpeF9mbG93KEpTX0VSUk9SLCB0bXBfcGF0aCwgQ29uZmlnKCksIGFwcGx5PVRydWUpCgogICAgYXNzZXJ0IHJjID09IDAKICAgICMgSW5pdGlhbCB2ZXJpZnkgKyB0aGUgcmVwYWlyJ3MgdmVyaWZ5LCBib3RoIGRldGVjdGVkIC0gdGhlIGxvb3AKICAgICMgbmV2ZXIgZmFsbHMgYmFjayB0byBhIGhhcmRjb2RlZCBweXRlc3QuCiAgICBhc3NlcnQgW2NtZCBmb3IgY21kLCBfIGluIHJ1bnNdID09IFsibnBtIHRlc3QiLCAibnBtIHRlc3QiXQoKCiMgLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KIyAoYykgYW4gZXhwbGljaXQgdGVzdF9jbWQgYmVhdHMgdGhlIHJlcG8ncyBtYXJrZXJzCiMgLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KCmRlZiB0ZXN0X2ZpeF9leHBsaWNpdF90ZXN0X2NtZF9iZWF0c19tYXJrZXJzKG1vbmtleXBhdGNoLCB0bXBfcGF0aCk6CiAgICByZXBvID0gX2pzX3JlcG8odG1wX3BhdGgpCiAgICBfaW5zdGFsbChtb25rZXlwYXRjaCwgW0pTX0RJRkZdKQogICAgcnVucyA9IF9jYXB0dXJlX3J1bnMobW9ua2V5cGF0Y2gpCgogICAgcmMgPSBhZ2VudC5maXhfZmxvdygKICAgICAgICBKU19FUlJPUiwgcmVwbywgQ29uZmlnKCksIGFwcGx5PVRydWUsIHRlc3RfY21kPSJtYWtlIGNoZWNrIgogICAgKQoKICAgIGFzc2VydCByYyA9PSAwCiAgICBhc3NlcnQgcnVucyA9PSBbKCJtYWtlIGNoZWNrIiwgcmVwbyldCgoKIyAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQojIChkKSBhIHBsYWluIFB5dGhvbiByZXBvIGdldHMgZXhhY3RseSB0aGUgcHJlLWRldGVjdGlvbiBjb21tYW5kCiMgLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KCmRlZiB0ZXN0X2ZpeF9wbGFpbl9weXRob25fcmVwb192ZXJpZmllc193aXRoX3B5dGVzdF9kZWZhdWx0KAogICAgbW9ua2V5cGF0Y2gsIHRtcF9wYXRoCik6CiAgICAodG1wX3BhdGggLyAiY2FsYy5weSIpLndyaXRlX3RleHQoQ0FMQ19QWSwgZW5jb2Rpbmc9InV0Zi04IikKICAgIF9pbnN0YWxsKG1vbmtleXBhdGNoLCBbUFlfRElGRl0pCiAgICBydW5zID0gX2NhcHR1cmVfcnVucyhtb25rZXlwYXRjaCkKCiAgICByYyA9IGFnZW50LmZpeF9mbG93KFBZX0VSUk9SLCB0bXBfcGF0aCwgQ29uZmlnKCksIGFwcGx5PVRydWUpCgogICAgYXNzZXJ0IHJjID09IDAKICAgIGFzc2VydCBydW5zID09IFsoInB5dGhvbiAtbSBweXRlc3QgLXEiLCB0bXBfcGF0aCldCgoKIyAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQojIChlKSBhIGN1c3RvbWlzZWQgY29uZmlnLnRlc3RfY29tbWFuZCBiZWF0cyBkZXRlY3Rpb24KIyAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQoKZGVmIHRlc3RfZml4X2N1c3RvbWlzZWRfY29uZmlnX2JlYXRzX2RldGVjdGlvbihtb25rZXlwYXRjaCwgdG1wX3BhdGgpOgogICAgcmVwbyA9IF9qc19yZXBvKHRtcF9wYXRoKQogICAgX2luc3RhbGwobW9ua2V5cGF0Y2gsIFtKU19ESUZGXSkKICAgIHJ1bnMgPSBfY2FwdHVyZV9ydW5zKG1vbmtleXBhdGNoKQoKICAgIHJjID0gYWdlbnQuZml4X2Zsb3coCiAgICAgICAgSlNfRVJST1IsIHJlcG8sIENvbmZpZyh0ZXN0X2NvbW1hbmQ9Im1ha2UgdmVyaWZ5IiksIGFwcGx5PVRydWUKICAgICkKCiAgICBhc3NlcnQgcmMgPT0gMAogICAgYXNzZXJ0IHJ1bnMgPT0gWygibWFrZSB2ZXJpZnkiLCByZXBvKV0KCgpkZWYgdGVzdF9maXhfY29uZmlnX25vbmVfZGlzYWJsZXNfdmVyaWZpY2F0aW9uKG1vbmtleXBhdGNoLCB0bXBfcGF0aCk6CiAgICByZXBvID0gX2pzX3JlcG8odG1wX3BhdGgpCiAgICBfaW5zdGFsbChtb25rZXlwYXRjaCwgW0pTX0RJRkZdKQogICAgcnVucyA9IF9jYXB0dXJlX3J1bnMobW9ua2V5cGF0Y2gpCgogICAgIyBWZXJpZmljYXRpb24gd2FzIHN3aXRjaGVkIG9mZiBpbiB0aGUgY29uZmlnOiBkZXRlY3Rpb24gbXVzdCBub3QKICAgICMgcmVzdXJyZWN0IGl0IGp1c3QgYmVjYXVzZSB0aGUgcmVwbyBoYXMgbWFya2Vycy4KICAgIHJjID0gYWdlbnQuZml4X2Zsb3coCiAgICAgICAgSlNfRVJST1IsIHJlcG8sIENvbmZpZyh0ZXN0X2NvbW1hbmQ9Tm9uZSksIGFwcGx5PVRydWUKICAgICkKCiAgICBhc3NlcnQgcmMgPT0gMAogICAgYXNzZXJ0IHJ1bnMgPT0gW10KCgojIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCiMgdGhlIHByZWNlZGVuY2UsIHBpbm5lZCBhdCB0aGUgaGVscGVyCiMgLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KCmRlZiB0ZXN0X3ZlcmlmeV9jb21tYW5kX3ByZWNlZGVuY2UodG1wX3BhdGgpOgogICAganNfZGlyID0gdG1wX3BhdGggLyAianMiCiAgICBqc19kaXIubWtkaXIoKQogICAganNfcm9vdCA9IF9qc19yZXBvKGpzX2RpcikKICAgIGVtcHR5X3Jvb3QgPSB0bXBfcGF0aCAvICJlbXB0eSIKICAgIGVtcHR5X3Jvb3QubWtkaXIoKQoKICAgICMgMS4gZXhwbGljaXQgd2lucyBvdmVyIG1hcmtlcnMgYW5kIG92ZXIgYSBjdXN0b21pc2VkIGNvbmZpZy4KICAgIGFzc2VydCBhZ2VudC5fdmVyaWZ5X2NvbW1hbmQoanNfcm9vdCwgQ29uZmlnKCksICJtYWtlIGNoZWNrIikgPT0gIm1ha2UgY2hlY2siCiAgICBhc3NlcnQgYWdlbnQuX3ZlcmlmeV9jb21tYW5kKAogICAgICAgIGpzX3Jvb3QsIENvbmZpZyh0ZXN0X2NvbW1hbmQ9Im1ha2UgdmVyaWZ5IiksICJtYWtlIGNoZWNrIgogICAgKSA9PSAibWFrZSBjaGVjayIKICAgICMgMi4gYSBjdXN0b21pc2VkIGNvbmZpZyBiZWF0cyBkZXRlY3Rpb24uLi4KICAgIGFzc2VydCBhZ2VudC5fdmVyaWZ5X2NvbW1hbmQoCiAgICAgICAganNfcm9vdCwgQ29uZmlnKHRlc3RfY29tbWFuZD0ibWFrZSB2ZXJpZnkiKQogICAgKSA9PSAibWFrZSB2ZXJpZnkiCiAgICAjICAgIC4uLmluY2x1ZGluZyAib2ZmIjogTm9uZS8iIiBhcmUgcmV0dXJuZWQsIG5vdCBkZXRlY3RlZCBwYXN0LgogICAgYXNzZXJ0IGFnZW50Ll92ZXJpZnlfY29tbWFuZChqc19yb290LCBDb25maWcodGVzdF9jb21tYW5kPU5vbmUpKSBpcyBOb25lCiAgICBhc3NlcnQgYWdlbnQuX3ZlcmlmeV9jb21tYW5kKGpzX3Jvb3QsIENvbmZpZyh0ZXN0X2NvbW1hbmQ9IiIpKSA9PSAiIgogICAgIyAzLiB3aXRoIHRoZSBkZWZhdWx0IGNvbmZpZywgZGV0ZWN0aW9uIGRlY2lkZXMuCiAgICBhc3NlcnQgYWdlbnQuX3ZlcmlmeV9jb21tYW5kKGpzX3Jvb3QsIENvbmZpZygpKSA9PSAibnBtIHRlc3QiCiAgICBhc3NlcnQgYWdlbnQuX3ZlcmlmeV9jb21tYW5kKGVtcHR5X3Jvb3QsIENvbmZpZygpKSA9PSAicHl0aG9uIC1tIHB5dGVzdCAtcSIKICAgICMgQSBjb25maWcgdmFsdWUgZXF1YWwgdG8gdGhlIGRlZmF1bHQgY291bnRzIGFzIHVuY3VzdG9taXNlZC4KICAgIGFzc2VydCBhZ2VudC5fdmVyaWZ5X2NvbW1hbmQoCiAgICAgICAganNfcm9vdCwgQ29uZmlnKHRlc3RfY29tbWFuZD0icHl0aG9uIC1tIHB5dGVzdCAtcSIpCiAgICApID09ICJucG0gdGVzdCIKCgojIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCiMgZ2VuLXRlc3RzOiBydW49VHJ1ZSB1c2VzIHRoZSBkZXRlY3RlZCBjb21tYW5kIGZvciBub24tUHl0aG9uIHRhcmdldHMsCiMgYW5kIGtlZXBzIHRoZSBleGFjdCBoaXN0b3JpY2FsIGNvbW1hbmQgZm9yIFB5dGhvbiBvbmVzCiMgLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KCkdPX1NVSVRFID0gKAogICAgInBhY2thZ2UgY2FsY1xuXG5pbXBvcnQgXCJ0ZXN0aW5nXCJcblxuIgogICAgImZ1bmMgVGVzdEFkZCh0ICp0ZXN0aW5nLlQpIHtcbiIKICAgICJcdGlmIEFkZCgyLCAzKSAhPSA1IHtcbiIKICAgICJcdFx0dC5GYXRhbChcImJhZCBhZGRcIilcbiIKICAgICJcdH1cbiIKICAgICJ9IgopCgpQWV9TVUlURSA9ICJkZWYgdGVzdF9hZGQoKTpcbiAgICBhc3NlcnQgYWRkKDEsIDIpID09IDMiCgoKZGVmIHRlc3RfZ2VuX3Rlc3RzX3J1bl91c2VzX2RldGVjdGVkX2NvbW1hbmRfZm9yX2dvKAogICAgbW9ua2V5cGF0Y2gsIHRtcF9wYXRoCik6CiAgICByZXBvID0gX2dvX3JlcG8odG1wX3BhdGgpCiAgICB0YXJnZXQgPSByZXBvIC8gImNhbGMuZ28iCiAgICBfaW5zdGFsbChtb25rZXlwYXRjaCwgWyJgYGBnb1xuIiArIEdPX1NVSVRFICsgIlxuYGBgXG4iXSkKICAgIHJ1bnMgPSBfY2FwdHVyZV9ydW5zKG1vbmtleXBhdGNoKQogICAgbW9ua2V5cGF0Y2guY2hkaXIocmVwbykKCiAgICBjb2RlID0gYWdlbnQuZ2VuX3Rlc3RzX2Zsb3codGFyZ2V0LCBDb25maWcoKSwgd3JpdGU9VHJ1ZSwgcnVuPVRydWUpCgogICAgYXNzZXJ0IGNvZGUgPT0gR09fU1VJVEUKICAgIGFzc2VydCBydW5zID09IFsoImdvIHRlc3QgLi8uLi4iLCByZXBvKV0KCgpkZWYgdGVzdF9nZW5fdGVzdHNfcnVuX2Zvcl9weXRob25faXNfdW5jaGFuZ2VkKG1vbmtleXBhdGNoLCB0bXBfcGF0aCk6CiAgICB0YXJnZXQgPSB0bXBfcGF0aCAvICJjYWxjLnB5IgogICAgdGFyZ2V0LndyaXRlX3RleHQoQ0FMQ19QWSwgZW5jb2Rpbmc9InV0Zi04IikKICAgIF9pbnN0YWxsKG1vbmtleXBhdGNoLCBbImBgYHB5dGhvblxuIiArIFBZX1NVSVRFICsgIlxuYGBgXG4iXSkKICAgIHJ1bnMgPSBfY2FwdHVyZV9ydW5zKG1vbmtleXBhdGNoKQogICAgbW9ua2V5cGF0Y2guY2hkaXIodG1wX3BhdGgpCgogICAgY29kZSA9IGFnZW50Lmdlbl90ZXN0c19mbG93KHRhcmdldCwgQ29uZmlnKCksIHdyaXRlPVRydWUsIHJ1bj1UcnVlKQoKICAgIGFzc2VydCBjb2RlID09IFBZX1NVSVRFCiAgICBvdXQgPSB0bXBfcGF0aCAvICJ0ZXN0cyIgLyAidGVzdF9jYWxjX2dlbmVyYXRlZC5weSIKICAgIGFzc2VydCBydW5zID09IFsoZiJ7c3lzLmV4ZWN1dGFibGV9IC1tIHB5dGVzdCB7b3V0fSAtcSIsIHRtcF9wYXRoKV0K
+"""Test-command wiring (issue #31): the verify steps resolve their
+command through `agent._verify_command`, which wires
+`runner.detect_test_command` into the flows.
+
+Precedence under test (documented on `_verify_command`):
+
+1. an explicit per-run ``test_cmd`` wins verbatim;
+2. a *customised* ``config.test_command`` (anything but the built-in
+   default - including ``None``/``""``, verification off) beats
+   detection;
+3. detection picks from the repo's markers, falling back to the
+   default pytest command - so a plain Python repo verifies with
+   exactly the command it used before detection existed.
+
+The fix flow resolves the command once and hands it to the repair
+loop, so every verify run in a fix uses the same command.
+"""
+
+import hashlib
+import json
+import re
+import sys
+
+from swarm_agent import agent, prompts
+from swarm_agent.config import Config
+
+
+# --------------------------------------------------------------------------
+# fakes (same shape as test_language_wiring's: scripted chat + fake embed)
+# --------------------------------------------------------------------------
+
+class ScriptedClient:
+    """Chat returns the next canned reply; embed is bag-of-words."""
+
+    DIM = 64
+
+    def __init__(self, replies: list[str]):
+        self._replies = list(replies)
+
+    def chat(self, messages, model=None):
+        if self._replies:
+            return self._replies.pop(0)
+        return "NO_FIX_POSSIBLE"
+
+    @staticmethod
+    def _vector(text: str) -> list[float]:
+        vec = [0.0] * ScriptedClient.DIM
+        for tok in re.findall(r"[a-z0-9_]+", text.lower()):
+            bucket = int.from_bytes(
+                hashlib.md5(tok.encode()).digest()[:4], "little"
+            ) % ScriptedClient.DIM
+            vec[bucket] += 1.0
+        return vec
+
+    def embed(self, texts, model=None):
+        return [self._vector(t) for t in texts]
+
+
+class FakeDistributor:
+    """Stands in for Distributor: `ask` chats, `client_for` embeds."""
+
+    def __init__(self, client: ScriptedClient):
+        self._client = client
+        self.asked: list = []
+
+    def ask(self, messages, model=None):
+        self.asked.append(messages)
+        return self._client.chat(messages, model=model)
+
+    def best_peer(self):
+        return "fake-peer"
+
+    def client_for(self, peer):
+        return self._client
+
+
+def _install(monkeypatch, replies) -> FakeDistributor:
+    dist = FakeDistributor(ScriptedClient(replies))
+    monkeypatch.setattr(agent, "get_distributor", lambda cfg: dist)
+    return dist
+
+
+def _capture_runs(monkeypatch, results=None):
+    """Replace agent.run_tests with a recorder.
+
+    Returns the list of (command, cwd) it was called with. ``results``
+    scripts the (exit_code, tail) replies; default is a single pass,
+    repeated for any further calls.
+    """
+    calls: list = []
+    scripted = list(results) if results else [(0, "all green")]
+
+    def fake_run_tests(cmd, root):
+        calls.append((cmd, root))
+        if len(scripted) > 1:
+            return scripted.pop(0)
+        return scripted[0]
+
+    monkeypatch.setattr(agent, "run_tests", fake_run_tests)
+    return calls
+
+
+def _reply(diff_body: str) -> str:
+    return "Here is the fix:\n\n```diff\n" + diff_body + "\n```\n"
+
+
+# --------------------------------------------------------------------------
+# fixtures: one small buggy repo per ecosystem
+# --------------------------------------------------------------------------
+
+APP_JS = "function add(a, b) {\n  return a - b;\n}\n"
+
+JS_ERROR = (
+    "Error: boom\n"
+    '  File "app.js", line 2, in add\n'
+    "    return a - b;\n"
+)
+
+JS_DIFF = _reply(
+    "--- a/app.js\n"
+    "+++ b/app.js\n"
+    "@@ -1,2 +1,2 @@\n"
+    " function add(a, b) {\n"
+    "-  return a - b;\n"
+    "+  return a + b;"
+)
+
+CALC_GO = "package calc\nfunc Add(a, b int) int { return a - b }\n"
+
+GO_ERROR = (
+    "panic: boom\n"
+    '  File "calc.go", line 2, in Add\n'
+)
+
+GO_DIFF = _reply(
+    "--- a/calc.go\n"
+    "+++ b/calc.go\n"
+    "@@ -1,2 +1,2 @@\n"
+    " package calc\n"
+    "-func Add(a, b int) int { return a - b }\n"
+    "+func Add(a, b int) int { return a + b }"
+)
+
+CALC_PY = "def add(a, b):\n    return a - b\n"
+
+PY_ERROR = (
+    "Traceback (most recent call last):\n"
+    '  File "calc.py", line 2, in add\n'
+    "    return a - b\n"
+    "ValueError: boom\n"
+)
+
+PY_DIFF = _reply(
+    "--- a/calc.py\n"
+    "+++ b/calc.py\n"
+    "@@ -1,2 +1,2 @@\n"
+    " def add(a, b):\n"
+    "-    return a - b\n"
+    "+    return a + b"
+)
+
+
+def _js_repo(tmp_path):
+    (tmp_path / "app.js").write_text(APP_JS, encoding="utf-8")
+    (tmp_path / "package.json").write_text(
+        json.dumps({"name": "app", "scripts": {"test": "jest"}}),
+        encoding="utf-8",
+    )
+    return tmp_path
+
+
+def _go_repo(tmp_path):
+    (tmp_path / "calc.go").write_text(CALC_GO, encoding="utf-8")
+    (tmp_path / "go.mod").write_text("module calc\n\ngo 1.22\n", encoding="utf-8")
+    return tmp_path
+
+
+# --------------------------------------------------------------------------
+# (a) + (b) detection reaches the fix flow's verify step
+# --------------------------------------------------------------------------
+
+def test_fix_in_js_repo_verifies_with_npm_test(monkeypatch, tmp_path):
+    repo = _js_repo(tmp_path)
+    _install(monkeypatch, [JS_DIFF])
+    runs = _capture_runs(monkeypatch)
+
+    rc = agent.fix_flow(JS_ERROR, repo, Config(), apply=True)
+
+    assert rc == 0
+    assert runs == [("npm test", repo)]
+
+
+def test_fix_in_go_repo_verifies_with_go_test(monkeypatch, tmp_path):
+    repo = _go_repo(tmp_path)
+    _install(monkeypatch, [GO_DIFF])
+    runs = _capture_runs(monkeypatch)
+
+    rc = agent.fix_flow(GO_ERROR, repo, Config(), apply=True)
+
+    assert rc == 0
+    assert runs == [("go test ./...", repo)]
+
+
+# --------------------------------------------------------------------------
+# the repair loop reuses the detected command for every verify run
+# --------------------------------------------------------------------------
+
+APP_JS_TWO_BUGS = (
+    "function add(a, b) {\n  return a - b;\n}\n"
+    "\n"
+    "function sub(a, b) {\n  return a + b;\n}\n"
+)
+
+JS_DIFF_2 = _reply(
+    "--- a/app.js\n"
+    "+++ b/app.js\n"
+    "@@ -5,2 +5,2 @@\n"
+    " function sub(a, b) {\n"
+    "-  return a + b;\n"
+    "+  return a - b;"
+)
+
+JEST_TAIL = (
+    "FAIL tests/app.test.js\n"
+    "  ● sub › subtracts\n"
+    "    expect(received).toBe(expected)\n"
+    "    Expected: 2\n"
+    "    Received: 8\n"
+)
+
+
+def test_repair_loop_verifies_with_the_detected_command(
+    monkeypatch, tmp_path
+):
+    (tmp_path / "app.js").write_text(APP_JS_TWO_BUGS, encoding="utf-8")
+    (tmp_path / "package.json").write_text(
+        json.dumps({"name": "app", "scripts": {"test": "jest"}}),
+        encoding="utf-8",
+    )
+    _install(monkeypatch, [JS_DIFF, JS_DIFF_2])
+    runs = _capture_runs(
+        monkeypatch, results=[(1, JEST_TAIL), (0, "all green")]
+    )
+
+    rc = agent.fix_flow(JS_ERROR, tmp_path, Config(), apply=True)
+
+    assert rc == 0
+    # Initial verify + the repair's verify, both detected - the loop
+    # never falls back to a hardcoded pytest.
+    assert [cmd for cmd, _ in runs] == ["npm test", "npm test"]
+
+
+# --------------------------------------------------------------------------
+# (c) an explicit test_cmd beats the repo's markers
+# --------------------------------------------------------------------------
+
+def test_fix_explicit_test_cmd_beats_markers(monkeypatch, tmp_path):
+    repo = _js_repo(tmp_path)
+    _install(monkeypatch, [JS_DIFF])
+    runs = _capture_runs(monkeypatch)
+
+    rc = agent.fix_flow(
+        JS_ERROR, repo, Config(), apply=True, test_cmd="make check"
+    )
+
+    assert rc == 0
+    assert runs == [("make check", repo)]
+
+
+# --------------------------------------------------------------------------
+# (d) a plain Python repo gets exactly the pre-detection command
+# --------------------------------------------------------------------------
+
+def test_fix_plain_python_repo_verifies_with_pytest_default(
+    monkeypatch, tmp_path
+):
+    (tmp_path / "calc.py").write_text(CALC_PY, encoding="utf-8")
+    _install(monkeypatch, [PY_DIFF])
+    runs = _capture_runs(monkeypatch)
+
+    rc = agent.fix_flow(PY_ERROR, tmp_path, Config(), apply=True)
+
+    assert rc == 0
+    assert runs == [("python -m pytest -q", tmp_path)]
+
+
+# --------------------------------------------------------------------------
+# (e) a customised config.test_command beats detection
+# --------------------------------------------------------------------------
+
+def test_fix_customised_config_beats_detection(monkeypatch, tmp_path):
+    repo = _js_repo(tmp_path)
+    _install(monkeypatch, [JS_DIFF])
+    runs = _capture_runs(monkeypatch)
+
+    rc = agent.fix_flow(
+        JS_ERROR, repo, Config(test_command="make verify"), apply=True
+    )
+
+    assert rc == 0
+    assert runs == [("make verify", repo)]
+
+
+def test_fix_config_none_disables_verification(monkeypatch, tmp_path):
+    repo = _js_repo(tmp_path)
+    _install(monkeypatch, [JS_DIFF])
+    runs = _capture_runs(monkeypatch)
+
+    # Verification was switched off in the config: detection must not
+    # resurrect it just because the repo has markers.
+    rc = agent.fix_flow(
+        JS_ERROR, repo, Config(test_command=None), apply=True
+    )
+
+    assert rc == 0
+    assert runs == []
+
+
+# --------------------------------------------------------------------------
+# the precedence, pinned at the helper
+# --------------------------------------------------------------------------
+
+def test_verify_command_precedence(tmp_path):
+    js_dir = tmp_path / "js"
+    js_dir.mkdir()
+    js_root = _js_repo(js_dir)
+    empty_root = tmp_path / "empty"
+    empty_root.mkdir()
+
+    # 1. explicit wins over markers and over a customised config.
+    assert agent._verify_command(js_root, Config(), "make check") == "make check"
+    assert agent._verify_command(
+        js_root, Config(test_command="make verify"), "make check"
+    ) == "make check"
+    # 2. a customised config beats detection...
+    assert agent._verify_command(
+        js_root, Config(test_command="make verify")
+    ) == "make verify"
+    #    ...including "off": None/"" are returned, not detected past.
+    assert agent._verify_command(js_root, Config(test_command=None)) is None
+    assert agent._verify_command(js_root, Config(test_command="")) == ""
+    # 3. with the default config, detection decides.
+    assert agent._verify_command(js_root, Config()) == "npm test"
+    assert agent._verify_command(empty_root, Config()) == "python -m pytest -q"
+    # A config value equal to the default counts as uncustomised.
+    assert agent._verify_command(
+        js_root, Config(test_command="python -m pytest -q")
+    ) == "npm test"
+
+
+# --------------------------------------------------------------------------
+# gen-tests: run=True uses the detected command for non-Python targets,
+# and keeps the exact historical command for Python ones
+# --------------------------------------------------------------------------
+
+GO_SUITE = (
+    "package calc\n\nimport \"testing\"\n\n"
+    "func TestAdd(t *testing.T) {\n"
+    "\tif Add(2, 3) != 5 {\n"
+    "\t\tt.Fatal(\"bad add\")\n"
+    "\t}\n"
+    "}"
+)
+
+PY_SUITE = "def test_add():\n    assert add(1, 2) == 3"
+
+
+def test_gen_tests_run_uses_detected_command_for_go(
+    monkeypatch, tmp_path
+):
+    repo = _go_repo(tmp_path)
+    target = repo / "calc.go"
+    _install(monkeypatch, ["```go\n" + GO_SUITE + "\n```\n"])
+    runs = _capture_runs(monkeypatch)
+    monkeypatch.chdir(repo)
+
+    code = agent.gen_tests_flow(target, Config(), write=True, run=True)
+
+    assert code == GO_SUITE
+    assert runs == [("go test ./...", repo)]
+
+
+def test_gen_tests_run_for_python_is_unchanged(monkeypatch, tmp_path):
+    target = tmp_path / "calc.py"
+    target.write_text(CALC_PY, encoding="utf-8")
+    _install(monkeypatch, ["```python\n" + PY_SUITE + "\n```\n"])
+    runs = _capture_runs(monkeypatch)
+    monkeypatch.chdir(tmp_path)
+
+    code = agent.gen_tests_flow(target, Config(), write=True, run=True)
+
+    assert code == PY_SUITE
+    out = tmp_path / "tests" / "test_calc_generated.py"
+    assert runs == [(f"{sys.executable} -m pytest {out} -q", tmp_path)]

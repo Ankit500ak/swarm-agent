@@ -53,6 +53,33 @@ class ScriptedClient:
         return [self._vector(t) for t in texts]
 
 
+class IndexStubClient:
+    """The index-side client handed out by `client_for`.
+
+    Embeds bag-of-words (same vectors as ScriptedClient, so index
+    ranking is unchanged) and answers any chat - i.e. index summary
+    generation - with a constant stub paragraph, so building the repo
+    index never consumes the scripted conversation replies that
+    `ask` depends on.
+    """
+
+    def chat(self, messages, model=None):
+        return "PURPOSE: stub summary"
+
+    @staticmethod
+    def _vector(text: str) -> list[float]:
+        vec = [0.0] * ScriptedClient.DIM
+        for tok in re.findall(r"[a-z0-9_]+", text.lower()):
+            bucket = int.from_bytes(
+                hashlib.md5(tok.encode()).digest()[:4], "little"
+            ) % ScriptedClient.DIM
+            vec[bucket] += 1.0
+        return vec
+
+    def embed(self, texts, model=None):
+        return [self._vector(t) for t in texts]
+
+
 class FakeDistributor:
     """Stands in for Distributor: `ask` chats, `client_for` embeds."""
 
@@ -68,7 +95,7 @@ class FakeDistributor:
         return "fake-peer"
 
     def client_for(self, peer):
-        return self._client
+        return IndexStubClient()
 
 
 def _install(monkeypatch, replies) -> FakeDistributor:

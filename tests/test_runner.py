@@ -14,7 +14,7 @@ approximations:
   the ● detail sections and the code frames are all as jest printed
   them.
 """
-from swarm_agent.runner import parse_failures
+from swarm_agent.runner import detect_test_command, parse_failures
 
 
 PYTEST_OUTPUT = """
@@ -242,3 +242,85 @@ def test_unknown_ecosystem_never_raises():
     assert len(records) == 1
     assert records[0]["message"] == output.strip()
     assert parse_failures("all good here\n", "go") == []
+
+
+# --- test-command detection (Issue #3) --------------------------------------
+# Marker dirs are built in tmp_path: no real repos are touched.
+
+def _write(path, content=""):
+    path.write_text(content, encoding="utf-8")
+    return path
+
+
+def test_detect_explicit_always_wins(tmp_path):
+    _write(tmp_path / "pyproject.toml", "[tool.pytest.ini_options]\n")
+    _write(tmp_path / "package.json", '{"scripts": {"test": "jest"}}')
+    _write(tmp_path / "go.mod", "module example.com/x\n")
+    _write(tmp_path / "Cargo.toml", "[package]\nname = \"x\"\n")
+    assert detect_test_command(tmp_path, explicit="make test") == "make test"
+    # Surrounding whitespace is stripped; whitespace-only falls through.
+    assert detect_test_command(tmp_path, explicit="  npm run check  ") == "npm run check"
+    assert detect_test_command(tmp_path, explicit="   ") == "python -m pytest -q"
+
+
+def test_detect_pytest_markers(tmp_path):
+    _write(tmp_path / "pyproject.toml", "[project]\nname = \"x\"\n")
+    assert detect_test_command(tmp_path) == "python -m pytest -q"
+    _write(tmp_path / "pyproject.toml", "")  # empty file still counts
+    assert detect_test_command(tmp_path) == "python -m pytest -q"
+    (tmp_path / "pyproject.toml").unlink()
+    _write(tmp_path / "pytest.ini", "[pytest]\n")
+    assert detect_test_command(tmp_path) == "python -m pytest -q"
+
+
+def test_detect_npm_test_script(tmp_path):
+    _write(tmp_path / "package.json", '{"scripts": {"test": "jest"}}')
+    assert detect_test_command(tmp_path) == "npm test"
+    # No test script -> no marker -> default.
+    _write(tmp_path / "package.json", '{"scripts": {"build": "tsc"}}')
+    assert detect_test_command(tmp_path) == "python -m pytest -q"
+    _write(tmp_path / "package.json", '{"name": "x"}')
+    assert detect_test_command(tmp_path) == "python -m pytest -q"
+    _write(tmp_path / "package.json", '{"scripts": {"test": "   "}}')
+    assert detect_test_command(tmp_path) == "python -m pytest -q"
+    # Malformed JSON degrades to the default, never raises.
+    _write(tmp_path / "package.json", "{not json")
+    assert detect_test_command(tmp_path) == "python -m pytest -q"
+    _write(tmp_path / "package.json", '["not", "an", "object"]')
+    assert detect_test_command(tmp_path) == "python -m pytest -q"
+
+
+def test_detect_go_and_cargo(tmp_path):
+    _write(tmp_path / "go.mod", "module example.com/x\n\ngo 1.21\n")
+    assert detect_test_command(tmp_path) == "go test ./..."
+    (tmp_path / "go.mod").unlink()
+    _write(tmp_path / "Cargo.toml", "[package]\nname = \"x\"\nversion = \"0.1.0\"\n")
+    assert detect_test_command(tmp_path) == "cargo test"
+
+
+def test_detect_priority_when_markers_combine(tmp_path):
+    # Listed order wins: Python first, then npm, then Go, then Cargo.
+    _write(tmp_path / "pyproject.toml", "")
+    _write(tmp_path / "package.json", '{"scripts": {"test": "jest"}}')
+    _write(tmp_path / "go.mod", "module x\n")
+    _write(tmp_path / "Cargo.toml", "[package]\n")
+    assert detect_test_command(tmp_path) == "python -m pytest -q"
+    (tmp_path / "pyproject.toml").unlink()
+    assert detect_test_command(tmp_path) == "npm test"
+    (tmp_path / "package.json").unlink()
+    assert detect_test_command(tmp_path) == "go test ./..."
+    (tmp_path / "go.mod").unlink()
+    assert detect_test_command(tmp_path) == "cargo test"
+
+
+def test_detect_default_and_degradation(tmp_path):
+    # Empty repo, string path, missing path, and None all degrade to
+    # the config default — never an exception.
+    assert detect_test_command(tmp_path) == "python -m pytest -q"
+    assert detect_test_command(str(tmp_path)) == "python -m pytest -q"
+    assert detect_test_command(tmp_path / "does-not-exist") == "python -m pytest -q"
+    assert detect_test_command(None) == "python -m pytest -q"
+    assert detect_test_command("") == "python -m pytest -q"
+    # A marker that is a directory, not a file, does not count.
+    (tmp_path / "go.mod").mkdir()
+    assert detect_test_command(tmp_path) == "python -m pytest -q"

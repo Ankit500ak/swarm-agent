@@ -18,6 +18,7 @@ import pytest
 
 from swarm_agent import agent, prompts
 from swarm_agent.config import Config
+from swarm_agent.ollama import SwarmError
 from swarm_agent.runner import parse_failures
 
 
@@ -351,6 +352,144 @@ def test_gen_tests_js_write_uses_jest_filename(monkeypatch, tmp_path):
     out = tmp_path / "tests" / "app.test.js"
     assert out.is_file()
     assert out.read_text(encoding="utf-8") == JS_SUITE + "\n"
+
+
+# --------------------------------------------------------------------------
+# gen-tests write paths (issue #38): Go in-package, Rust under tests/,
+# and no destination is ever silently overwritten
+# --------------------------------------------------------------------------
+
+LEDGER_GO = "package store\n\nfunc Balance() int { return 0 }\n"
+
+LEDGER_GO_SUITE = (
+    "package store\n\nimport \"testing\"\n\n"
+    "func TestBalance(t *testing.T) {\n"
+    "\tif Balance() != 0 {\n"
+    "\t\tt.Fatal(\"bad balance\")\n"
+    "\t}\n"
+    "}"
+)
+
+LEDGER_RS = "pub fn balance() -> i64 { 0 }\n"
+
+RUST_SUITE = (
+    "use ledger::balance;\n\n"
+    "#[test]\n"
+    "fn balance_starts_at_zero() {\n"
+    "    assert_eq!(balance(), 0);\n"
+    "}"
+)
+
+HANDWRITTEN_GO_TEST = (
+    "package store\n\nimport \"testing\"\n\n"
+    "func TestHandwritten(t *testing.T) {}\n"
+)
+
+
+def test_gen_tests_python_write_path_unchanged(monkeypatch, tmp_path):
+    target = tmp_path / "calc.py"
+    target.write_text(CALC, encoding="utf-8")
+    _install(monkeypatch, ["```python\n" + PY_SUITE + "\n```\n"])
+    monkeypatch.chdir(tmp_path)
+
+    code = agent.gen_tests_flow(target, Config(), write=True)
+
+    assert code == PY_SUITE
+    out = tmp_path / "tests" / "test_calc_generated.py"
+    assert out.is_file()
+    assert out.read_text(encoding="utf-8") == PY_SUITE + "\n"
+
+
+def test_gen_tests_go_write_is_in_package(monkeypatch, tmp_path):
+    pkg = tmp_path / "pkg" / "store"
+    pkg.mkdir(parents=True)
+    target = pkg / "ledger.go"
+    target.write_text(LEDGER_GO, encoding="utf-8")
+    dist = _install(monkeypatch, ["```go\n" + LEDGER_GO_SUITE + "\n```\n"])
+    monkeypatch.chdir(tmp_path)
+
+    code = agent.gen_tests_flow(target, Config(), write=True)
+
+    assert code == LEDGER_GO_SUITE
+    assert dist.asked[0][0]["content"] == prompts.GO_TESTGEN_SYSTEM
+    # In-package, next to the target - NOT the legacy Python name.
+    out = pkg / "ledger_test.go"
+    assert out.is_file()
+    assert out.read_text(encoding="utf-8") == LEDGER_GO_SUITE + "\n"
+    assert not (tmp_path / "tests" / "test_ledger_generated.py").exists()
+
+
+def test_gen_tests_rust_write_uses_cargo_tests_dir(monkeypatch, tmp_path):
+    target = tmp_path / "ledger.rs"
+    target.write_text(LEDGER_RS, encoding="utf-8")
+    dist = _install(monkeypatch, ["```rust\n" + RUST_SUITE + "\n```\n"])
+    monkeypatch.chdir(tmp_path)
+
+    code = agent.gen_tests_flow(target, Config(), write=True)
+
+    assert code == RUST_SUITE
+    assert dist.asked[0][0]["content"] == prompts.RUST_TESTGEN_SYSTEM
+    out = tmp_path / "tests" / "ledger_test.rs"
+    assert out.is_file()
+    assert out.read_text(encoding="utf-8") == RUST_SUITE + "\n"
+    assert not (tmp_path / "tests" / "test_ledger_generated.py").exists()
+
+
+def test_gen_tests_go_write_refuses_to_clobber_existing(
+    monkeypatch, tmp_path
+):
+    pkg = tmp_path / "pkg" / "store"
+    pkg.mkdir(parents=True)
+    target = pkg / "ledger.go"
+    target.write_text(LEDGER_GO, encoding="utf-8")
+    existing = pkg / "ledger_test.go"
+    existing.write_text(HANDWRITTEN_GO_TEST, encoding="utf-8")
+    _install(monkeypatch, ["```go\n" + LEDGER_GO_SUITE + "\n```\n"])
+    monkeypatch.chdir(tmp_path)
+
+    with pytest.raises(SwarmError, match="file already exists"):
+        agent.gen_tests_flow(target, Config(), write=True)
+
+    # The hand-written suite is untouched.
+    assert existing.read_text(encoding="utf-8") == HANDWRITTEN_GO_TEST
+
+
+def test_gen_tests_rust_write_refuses_to_clobber_existing(
+    monkeypatch, tmp_path
+):
+    target = tmp_path / "ledger.rs"
+    target.write_text(LEDGER_RS, encoding="utf-8")
+    tests_dir = tmp_path / "tests"
+    tests_dir.mkdir()
+    existing = tests_dir / "ledger_test.rs"
+    existing.write_text("// hand-written\n", encoding="utf-8")
+    _install(monkeypatch, ["```rust\n" + RUST_SUITE + "\n```\n"])
+    monkeypatch.chdir(tmp_path)
+
+    with pytest.raises(SwarmError, match="file already exists"):
+        agent.gen_tests_flow(target, Config(), write=True)
+
+    assert existing.read_text(encoding="utf-8") == "// hand-written\n"
+
+
+def test_gen_tests_go_write_fills_an_empty_existing_file(
+    monkeypatch, tmp_path
+):
+    # Mirrors the patcher's rule exactly: only a non-empty existing
+    # file blocks creation; an empty placeholder is safe to fill.
+    pkg = tmp_path / "pkg" / "store"
+    pkg.mkdir(parents=True)
+    target = pkg / "ledger.go"
+    target.write_text(LEDGER_GO, encoding="utf-8")
+    out = pkg / "ledger_test.go"
+    out.write_text("", encoding="utf-8")
+    _install(monkeypatch, ["```go\n" + LEDGER_GO_SUITE + "\n```\n"])
+    monkeypatch.chdir(tmp_path)
+
+    code = agent.gen_tests_flow(target, Config(), write=True)
+
+    assert code == LEDGER_GO_SUITE
+    assert out.read_text(encoding="utf-8") == LEDGER_GO_SUITE + "\n"
 
 
 # --------------------------------------------------------------------------

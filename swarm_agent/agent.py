@@ -130,11 +130,18 @@ def _gather_related_context(
     client cannot embed - degrades to an empty list with a printed
     note. Retrieval is a hint for the model, never a reason for the
     fix itself to fail.
+
+    The index also gets a module summariser built on the same client
+    (the analyze flow's chat seam: system/user message pairs through
+    ``client.chat``), so modules summarised during this build are
+    stored in the index for later runs. Summary generation failing -
+    for one module or every module - never degrades retrieval; the
+    affected modules simply have no summary, with a printed note.
     """
     try:
         # Deferred import: swarm_agent.index imports constants from
         # this module, so it cannot be imported at module level.
-        from .index import RepoIndex
+        from .index import RepoIndex, chat_summariser
 
         client = distributor.client_for(distributor.best_peer())
         index = RepoIndex.build(
@@ -142,7 +149,14 @@ def _gather_related_context(
             client=client,
             model=config.model,
             budget_tokens=config.chunk_tokens,
+            summariser=chat_summariser(client.chat),
         )
+        if index.summary_failures:
+            print(
+                "swarm-agent: index summaries unavailable for "
+                + ", ".join(index.summary_failures)
+                + "; continuing without them"
+            )
         hits = index.search(
             _related_query(error_text, code_blocks), k=RELATED_SEARCH_K
         )

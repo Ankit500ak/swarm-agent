@@ -29,6 +29,20 @@ them, so the file records its embedder kind and model; a build that
 finds a different space (or a different model) discards the stored
 vectors and re-embeds. A missing or corrupt index file is never an
 error - it simply rebuilds from scratch.
+
+Each file entry may also carry a ``summary``: one paragraph describing
+the module, generated at build time by an optional *summariser*
+callable injected by the caller (see :func:`chat_summariser`). The
+index itself stays model-agnostic - it only knows the callable's
+shape, ``summariser(module_path, chunks) -> str | None``. Summaries
+are strictly optional: with no summariser the index is exactly what it
+was before they existed, a summariser failure leaves that one module
+without a summary (never a fabricated one), and a module's summary is
+regenerated only when the module's content fingerprint changes - a
+summary stored by an older build is carried verbatim while its file
+is unchanged. The field is an additive, optional key in the existing
+version-1 format, so index files written before summaries existed
+load unchanged, their modules simply having no summary yet.
 """
 
 from __future__ import annotations
@@ -39,8 +53,9 @@ import math
 import os
 import re
 from pathlib import Path
-from typing import Optional
+from typing import Callable, Optional
 
+from . import prompts
 from .agent import BINARY_EXTS, MAX_FILE_BYTES, SKIP_DIRS
 from .chunking import chunk_file
 from .config import DEFAULT_MODEL
@@ -160,6 +175,54 @@ def _iter_indexable_files(root: Path):
 
 
 # --------------------------------------------------------------------------
+# module summaries (optional, injected - the index stays model-agnostic)
+# --------------------------------------------------------------------------
+
+#: A module summariser: given a module's repo-relative path and its
+#: chunk records (``{"start_line", "kind", "text", ...}``), return the
+#: one-paragraph summary to store, or None to store nothing.
+Summariser = Callable[[str, list], Optional[str]]
+
+
+def chat_summariser(chat: Callable) -> Summariser:
+    """A summariser backed by a ``chat(messages) -> str`` callable.
+
+    This is the two-stage composition the analyze flow uses, per
+    module: each chunk is summarised with
+    :data:`prompts.ANALYZE_SYSTEM` (PURPOSE / KEY / RISKS, via
+    :func:`prompts.build_chunk_prompt`), then the chunk summaries are
+    combined into the single stored paragraph with
+    :data:`prompts.INDEX_SUMMARY_SYSTEM` (via
+    :func:`prompts.build_index_summary_prompt`). Any exception from
+    ``chat`` propagates - the index treats it as "this module gets no
+    summary"; an empty final reply likewise stores nothing.
+    """
+
+    def summarise(module_path: str, chunks: list) -> Optional[str]:
+        chunk_summaries = []
+        for chunk in chunks:
+            reply = chat([
+                {"role": "system", "content": prompts.ANALYZE_SYSTEM},
+                {"role": "user", "content": prompts.build_chunk_prompt(
+                    module_path,
+                    chunk["start_line"],
+                    chunk["kind"],
+                    chunk["text"],
+                )},
+            ])
+            chunk_summaries.append(reply.strip())
+        reply = chat([
+            {"role": "system", "content": prompts.INDEX_SUMMARY_SYSTEM},
+            {"role": "user", "content": prompts.build_index_summary_prompt(
+                module_path, chunk_summaries
+            )},
+        ])
+        return reply.strip() or None
+
+    return summarise
+
+
+# --------------------------------------------------------------------------
 # the index
 # --------------------------------------------------------------------------
 
@@ -172,15 +235,20 @@ class RepoIndex:
         client=None,
         model: Optional[str] = None,
         budget_tokens: int = 1500,
+        summariser: Optional[Summariser] = None,
     ) -> None:
         self.repo_root = Path(repo_root)
         self.client = client
         self.model = model or DEFAULT_MODEL
         self.budget_tokens = budget_tokens
+        self.summariser = summariser
         # "ollama" | "tfidf" | None (nothing built or loaded yet)
         self.embedder: Optional[str] = None
         self._tfidf: Optional[_TfidfSpace] = None
-        # relpath -> {"mtime": float, "size": int, "chunks": [record, ...]}
+        # relpaths whose summary generation failed in the last build
+        self.summary_failures: list[str] = []
+        # relpath -> {"mtime": float, "size": int, "chunks": [record, ...],
+        #             "summary": str | None}
         # record = {"start_line", "kind", "text", "vector"}
         self._files: dict[str, dict] = {}
 
@@ -239,14 +307,22 @@ class RepoIndex:
         client=None,
         model: Optional[str] = None,
         budget_tokens: int = 1500,
+        summariser: Optional[Summariser] = None,
     ) -> "RepoIndex":
         """Build (or incrementally refresh) the index for ``repo_root``.
 
         Only files whose ``mtime``/``size`` changed are re-chunked and
         re-embedded; the refreshed index is saved before returning.
+        When ``summariser`` is given, modules that lack a summary (new,
+        changed, or never summarised) get one generated; modules whose
+        content is unchanged keep their stored summary untouched.
         """
         index = cls(
-            repo_root, client=client, model=model, budget_tokens=budget_tokens
+            repo_root,
+            client=client,
+            model=model,
+            budget_tokens=budget_tokens,
+            summariser=summariser,
         )
         index._build()
         index.save()
@@ -286,11 +362,15 @@ class RepoIndex:
 
         # Assemble chunk records: reuse what is still valid, re-chunk the
         # rest. Stored vectors survive only if the embedding space does.
+        # A stored summary survives whenever the file itself is unchanged
+        # (it describes the text, not the vectors); a changed file's old
+        # summary is dropped here and regenerated below if possible.
         files: dict[str, dict] = {}
         pending: list[dict] = []  # chunk records still needing a vector
         for rel, (abspath, mtime, size) in sorted(self._scan().items()):
             old = stored_files.get(rel)
             chunks: Optional[list[dict]] = None
+            summary: Optional[str] = None
             if old and old.get("mtime") == mtime and old.get("size") == size:
                 chunks = [
                     {
@@ -301,6 +381,10 @@ class RepoIndex:
                     }
                     for c in old.get("chunks", [])
                 ]
+                # Absent on pre-summary index files: treated as missing.
+                stored_summary = old.get("summary")
+                if isinstance(stored_summary, str) and stored_summary:
+                    summary = stored_summary
             if chunks is None:
                 try:
                     fresh = chunk_file(abspath, budget_tokens=self.budget_tokens)
@@ -315,36 +399,71 @@ class RepoIndex:
                     }
                     for c in fresh
                 ]
-            files[rel] = {"mtime": mtime, "size": size, "chunks": chunks}
+            files[rel] = {
+                "mtime": mtime,
+                "size": size,
+                "chunks": chunks,
+                "summary": summary,
+            }
             pending.extend(c for c in chunks if c["vector"] is None)
         self._files = files
+
+        # Modules that will need a summary generated in this build:
+        # anything whose entry has none (new, changed, or stored by a
+        # build that had no summariser). Unchanged modules with a
+        # stored summary are never in this list.
+        needs_summary = (
+            [rel for rel, entry in files.items() if entry["summary"] is None]
+            if self.summariser is not None
+            else []
+        )
 
         if not pending and same_space:
             # Pure reuse - nothing to embed, keep the stored space as-is.
             self.embedder = stored_mode
             self._tfidf = _TfidfSpace.from_json(stored.get("tfidf"))
-            return
-
-        mode = self._probe_mode()
-        if stored_mode is not None and mode != stored_mode:
-            # The space changed under us: every stored vector is invalid.
-            pending = [
-                c for entry in files.values() for c in entry["chunks"]
-            ]
-            for chunk in pending:
-                chunk["vector"] = None
-
-        if mode == "ollama" and pending:
-            try:
-                self._embed_via_client(pending)
-            except Exception:
-                mode = "tfidf"  # peer failed mid-build: fall back locally
+        else:
+            mode = self._probe_mode()
+            if stored_mode is not None and mode != stored_mode:
+                # The space changed under us: every stored vector is invalid.
                 pending = [
                     c for entry in files.values() for c in entry["chunks"]
                 ]
-        if mode == "tfidf":
-            self._embed_via_tfidf()
-        self.embedder = mode
+                for chunk in pending:
+                    chunk["vector"] = None
+
+            if mode == "ollama" and pending:
+                try:
+                    self._embed_via_client(pending)
+                except Exception:
+                    mode = "tfidf"  # peer failed mid-build: fall back locally
+                    pending = [
+                        c for entry in files.values() for c in entry["chunks"]
+                    ]
+            if mode == "tfidf":
+                self._embed_via_tfidf()
+            self.embedder = mode
+
+        if needs_summary:
+            self._generate_summaries(needs_summary)
+
+    def _generate_summaries(self, relpaths: list[str]) -> None:
+        """Fill in missing module summaries via the injected summariser.
+
+        Per-module failure isolation: a module whose summariser raises
+        (or returns nothing) keeps no summary and is recorded in
+        :attr:`summary_failures`; the rest of the index is unaffected.
+        """
+        assert self.summariser is not None  # guarded by the caller
+        for rel in relpaths:
+            entry = self._files[rel]
+            try:
+                summary = self.summariser(rel, entry["chunks"])
+            except Exception:
+                self.summary_failures.append(rel)
+                continue
+            if isinstance(summary, str) and summary.strip():
+                entry["summary"] = summary.strip()
 
     def _embed_via_client(self, pending: list[dict]) -> None:
         for i in range(0, len(pending), EMBED_BATCH):
@@ -404,3 +523,27 @@ class RepoIndex:
             {"path": rel, "start_line": start, "text": text, "score": score}
             for score, rel, start, text in scored[:k]
         ]
+
+    # -- summaries -----------------------------------------------------------
+    def module_summary(self, path: str | Path) -> Optional[str]:
+        """The stored summary paragraph for one module, or None.
+
+        ``path`` is the module's repo-relative path (the same key the
+        index stores, e.g. ``"pkg/mod.py"``). Modules that were never
+        summarised - no summariser at build time, generation failed,
+        or the file is not in the index - simply return None.
+        """
+        rel = path.as_posix() if isinstance(path, Path) else str(path)
+        entry = self._files.get(rel)
+        if not entry:
+            return None
+        summary = entry.get("summary")
+        return summary if isinstance(summary, str) and summary else None
+
+    def summaries(self) -> dict[str, str]:
+        """All stored module summaries, ``{relpath: paragraph}``."""
+        return {
+            rel: entry["summary"]
+            for rel, entry in sorted(self._files.items())
+            if isinstance(entry.get("summary"), str) and entry["summary"]
+        }

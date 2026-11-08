@@ -1,0 +1,36 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.2.0, pluggy-1.7.0
+rootdir: /home/hatch/workspace/swarm-agent-ankit/benchmarks/fix_repos/off_by_one
+configfile: pytest.ini
+testpaths: tests
+collected 3 items
+
+tests/test_recent.py FF.                                                 [100%]
+
+=================================== FAILURES ===================================
+_______________________________ test_last_three ________________________________
+
+    def test_last_three():
+>       assert recent_items([1, 2, 3, 4, 5], 3) == [3, 4, 5]
+E       assert [2, 3, 4, 5] == [3, 4, 5]
+E         
+E         At index 0 diff: 2 != 3
+E         Left contains one more item: 5
+E         Use -v to get more diff
+
+tests/test_recent.py:10: AssertionError
+________________________________ test_last_one _________________________________
+
+    def test_last_one():
+>       assert recent_items([1, 2, 3], 1) == [3]
+E       assert [2, 3] == [3]
+E         
+E         At index 0 diff: 2 != 3
+E         Left contains one more item: 3
+E         Use -v to get more diff
+
+tests/test_recent.py:14: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_recent.py::test_last_three - assert [2, 3, 4, 5] == [3, 4, 5]
+FAILED tests/test_recent.py::test_last_one - assert [2, 3] == [3]
+========================= 2 failed, 1 passed in 0.04s ==========================

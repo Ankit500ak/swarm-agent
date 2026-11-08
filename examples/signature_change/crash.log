@@ -1,0 +1,61 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.2.0, pluggy-1.7.0
+rootdir: /home/hatch/workspace/swarm-agent-ankit/examples/signature_change
+configfile: pytest.ini
+testpaths: tests
+collected 2 items
+
+tests/test_report.py FF                                                  [100%]
+
+=================================== FAILURES ===================================
+_______________________ test_monthly_total_converts_eur ________________________
+
+    def test_monthly_total_converts_eur():
+        # 100 EUR at 1.10 -> 110 USD.
+        entries = [{"amount": 100.0, "currency": "EUR"}]
+>       assert monthly_total(entries) == pytest.approx(110.0)
+               ^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_report.py:11: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+entries = [{'amount': 100.0, 'currency': 'EUR'}]
+
+    def monthly_total(entries):
+        """Total of all entries, in USD."""
+        total = 0.0
+        for entry in entries:
+>           total += record(entry)["amount"]
+                     ^^^^^^^^^^^^^
+E           TypeError: record() missing 1 required keyword-only argument: 'currency'
+
+ledger/report.py:10: TypeError
+___________________________ test_monthly_total_mixed ___________________________
+
+    def test_monthly_total_mixed():
+        # 100 EUR -> 110 USD, plus 50 USD -> 160 USD.
+        entries = [
+            {"amount": 100.0, "currency": "EUR"},
+            {"amount": 50.0, "currency": "USD"},
+        ]
+>       assert monthly_total(entries) == pytest.approx(160.0)
+               ^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_report.py:20: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+entries = [{'amount': 100.0, 'currency': 'EUR'}, {'amount': 50.0, 'currency': 'USD'}]
+
+    def monthly_total(entries):
+        """Total of all entries, in USD."""
+        total = 0.0
+        for entry in entries:
+>           total += record(entry)["amount"]
+                     ^^^^^^^^^^^^^
+E           TypeError: record() missing 1 required keyword-only argument: 'currency'
+
+ledger/report.py:10: TypeError
+=========================== short test summary info ============================
+FAILED tests/test_report.py::test_monthly_total_converts_eur - TypeError: rec...
+FAILED tests/test_report.py::test_monthly_total_mixed - TypeError: record() m...
+============================== 2 failed in 0.04s ===============================

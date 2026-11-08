@@ -13,6 +13,7 @@ Two jobs live here:
 
 from __future__ import annotations
 
+import json
 import re
 import subprocess
 from pathlib import Path
@@ -46,6 +47,69 @@ def run_tests(
         return 124, (f"[timed out after {timeout:.0f}s]\n" + out)[-TAIL_CHARS:]
     except OSError as exc:
         return 127, f"could not run {command!r}: {exc}"
+
+
+# -- test-command detection (Issue #3) ----------------------------------------
+#
+# The default test command is the config default, "python -m pytest -q".
+# detect_test_command() picks the right command for the target repo by
+# its markers, so fix/verify work on JS/TS, Go and Rust repos too.
+# The explicit --test-cmd always wins; wiring this into the agent's
+# `cmd = test_cmd if test_cmd is not None else config.test_command`
+# (agent.py, Core lane) is a follow-up — this lands the detector.
+
+PYTEST_COMMAND = "python -m pytest -q"
+NPM_COMMAND = "npm test"
+GO_COMMAND = "go test ./..."
+CARGO_COMMAND = "cargo test"
+
+
+def _has_test_script(package_json: Path) -> bool:
+    """True when package.json defines a non-empty "test" script.
+
+    A missing file, unreadable content, or malformed JSON counts as
+    no script — detection never raises.
+    """
+    try:
+        data = json.loads(package_json.read_text(encoding="utf-8"))
+    except (OSError, ValueError, UnicodeDecodeError):
+        return False
+    if not isinstance(data, dict):
+        return False
+    scripts = data.get("scripts")
+    if not isinstance(scripts, dict):
+        return False
+    test = scripts.get("test")
+    return isinstance(test, str) and bool(test.strip())
+
+
+def detect_test_command(path: str | Path | None, explicit: str | None = None) -> str:
+    """Detect the test command for the repo at ``path``.
+
+    ``explicit`` (from --test-cmd) always wins when given. Otherwise
+    the repo is inspected for markers, in this order:
+
+    - ``pyproject.toml`` or ``pytest.ini`` -> ``python -m pytest -q``
+    - ``package.json`` with a ``"test"`` script -> ``npm test``
+    - ``go.mod`` -> ``go test ./...``
+    - ``Cargo.toml`` -> ``cargo test``
+
+    A repo with no marker defaults to pytest (today's behaviour).
+    Never raises: a missing or unreadable path degrades to the default.
+    """
+    if explicit and explicit.strip():
+        return explicit.strip()
+    root = Path(path) if path else None
+    if root is not None and root.is_dir():
+        if (root / "pyproject.toml").is_file() or (root / "pytest.ini").is_file():
+            return PYTEST_COMMAND
+        if _has_test_script(root / "package.json"):
+            return NPM_COMMAND
+        if (root / "go.mod").is_file():
+            return GO_COMMAND
+        if (root / "Cargo.toml").is_file():
+            return CARGO_COMMAND
+    return PYTEST_COMMAND
 
 
 # -- structured failure parsing (Issue #10, Phase 3) ---------------------------

@@ -1,0 +1,31 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.2.0, pluggy-1.7.0
+rootdir: /home/hatch/workspace/swarm-agent-ankit/benchmarks/fix_repos/empty_average
+configfile: pytest.ini
+testpaths: tests
+collected 2 items
+
+tests/test_stats.py .F                                                   [100%]
+
+=================================== FAILURES ===================================
+___________________________ test_empty_returns_zero ____________________________
+
+    def test_empty_returns_zero():
+>       assert average([]) == 0.0
+               ^^^^^^^^^^^
+
+tests/test_stats.py:14: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+values = []
+
+    def average(values):
+        """Return the mean of ``values``; 0.0 when the list is empty."""
+>       return sum(values) / len(values)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ZeroDivisionError: division by zero
+
+stats.py:10: ZeroDivisionError
+=========================== short test summary info ============================
+FAILED tests/test_stats.py::test_empty_returns_zero - ZeroDivisionError: divi...
+========================= 1 failed, 1 passed in 0.04s ==========================

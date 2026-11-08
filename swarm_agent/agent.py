@@ -730,6 +730,13 @@ def gen_tests_flow(
     The prompt contract is selected from the target's extension
     (pytest for Python, jest for JS/TS, go test, cargo test); an
     unknown extension degrades to the Python contract.
+
+    With ``write``, the suite goes to the idiomatic location for
+    its language: Python/JS/TS under ``tests/`` in the cwd (the
+    historical paths), Rust to ``tests/<stem>_test.rs``, and Go
+    in-package next to the target as ``<stem>_test.go`` - Go tests
+    only compile in the package they test. An existing non-empty
+    destination is never overwritten; the flow refuses instead.
     """
     target = Path(target)
     if not target.is_file():
@@ -753,12 +760,27 @@ def gen_tests_flow(
 
     tests_dir = Path.cwd() / "tests"
     tests_dir.mkdir(exist_ok=True)
-    if language == "javascript":
+    if language == "go":
+        # In-package: a Go test file only tests the package it sits
+        # in, so the suite goes next to the target, not under tests/.
+        out = target.parent / f"{target.stem}_test.go"
+    elif language == "rust":
+        # The conventional cargo integration-test location.
+        out = tests_dir / f"{target.stem}_test.rs"
+    elif language == "javascript":
         out = tests_dir / f"{target.stem}.test.js"
     elif language == "typescript":
         out = tests_dir / f"{target.stem}.test.ts"
     else:
         out = tests_dir / f"test_{target.stem}_generated.py"
+    # Never clobber an existing non-empty file - the idiomatic Go
+    # and Rust destinations in particular are names a human uses for
+    # hand-written tests. Same rule the patcher applies to file
+    # creation: refuse, and let the user move the file aside.
+    if out.exists() and out.read_text(
+        encoding="utf-8", errors="replace"
+    ).strip():
+        raise SwarmError(f"cannot create {out}: file already exists")
     out.write_text(code.rstrip() + "\n", encoding="utf-8")
     print(f"swarm-agent: wrote {out}")
     if run:

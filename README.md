@@ -3,6 +3,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/Ankit500ak/swarm-agent/actions/workflows/ci.yml"><img src="https://github.com/Ankit500ak/swarm-agent/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <img src="https://img.shields.io/badge/python-3.10%2B-3776AB" alt="Python 3.10+">
   <img src="https://img.shields.io/badge/version-0.1.0-4ade80" alt="Version 0.1.0">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license">

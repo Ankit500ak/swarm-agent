@@ -2,8 +2,11 @@
 
 The distributor owns the peer list and the failure policy:
 
-- Peers that serve the requested model are preferred; if none do, any
-  healthy peer is used (its client resolves to a model it actually has).
+- Peers that serve the requested model are preferred — first under the
+  exact name, then under a spelling :func:`models_match` recognises as
+  the same model (an MLX server's ``mlx-community/…-4bit`` name for
+  Ollama's ``…:7b``); if none do, any healthy peer is used (its client
+  resolves to a model it actually has).
 - :meth:`Distributor.map_units` schedules *latency-weighted*: each peer
   carries an exponentially-weighted moving average (EWMA) of how long
   its units actually take, seeded from the latency discovery measured.
@@ -21,6 +24,7 @@ The distributor owns the peer list and the failure policy:
 
 from __future__ import annotations
 
+import re
 import threading
 import time
 from collections import deque
@@ -40,6 +44,105 @@ _MIN_EWMA_MS = 0.01
 # pessimistic, so measured peers win the first picks and this peer's own
 # first timings quickly replace the guess.
 _DEFAULT_EWMA_MS = 1000.0
+
+# -- model-name matching -------------------------------------------------------
+#
+# Peers report model names in whatever spelling their server uses: Ollama
+# says ``qwen2.5-coder:7b`` while an MLX server says
+# ``mlx-community/Qwen2.5-Coder-7B-Instruct-4bit``. Those are the same
+# model, so exact string equality would never select the MLX peer under
+# the default configuration (issue #47). ``model_key`` reduces a name to
+# a comparable ``(base, size)`` pair; ``models_match`` compares keys.
+
+# A hyphen token stating the parameter count: 7b, 14b, 0.5b, 135m, 8x7b.
+_SIZE_RE = re.compile(r"^(?:\d+x)?\d+(?:\.\d+)?[bm]$")
+# A hyphen token stating only how the weights are packed: 4bit, 8bit,
+# fp16, bf16, f16/f32, GGUF quant names (q4_K_M, q8_0, iq4_xs, ...).
+_QUANT_RE = re.compile(r"^(?:\d+bit|fp\d+|bf\d+|f16|f32|i?q\d+.*)$")
+_FORMAT_TOKENS = frozenset({"awq", "gptq", "gguf", "safetensors", "exl2"})
+# Fine-tune flavour tokens: they say how a model was tuned, not which
+# model it is, and the two spellings of the same model disagree on them
+# (Ollama's ``:7b`` tag implies the instruct build without saying so).
+_FLAVOUR_TOKENS = frozenset({"instruct", "chat"})
+
+
+def model_key(name: Optional[str]) -> Optional[tuple[str, Optional[str]]]:
+    """Reduce a model name to a comparable ``(base, size)`` key, or None.
+
+    Normalisation, applied identically to the requested model and to
+    every name a peer reports:
+
+    - case is folded and any registry/namespace prefix is dropped
+      (everything up to the last ``/``, e.g. ``mlx-community/``);
+    - an Ollama ``:tag`` is split off and read like the rest of the name
+      (``:7b``, ``:7b-instruct-q4_K_M``); a bare ``:latest`` tag carries
+      no information and is ignored;
+    - tokens stating the parameter size (``7b``, ``14b``, ``0.5b``,
+      ``8x7b`` ...) are pulled out as ``size``, wherever they appear;
+    - quantisation/format tokens (``4bit``, ``fp16``, ``q4_K_M``,
+      ``gguf`` ...) and the flavour tokens ``instruct``/``chat`` are
+      dropped;
+    - what remains, rejoined with ``-``, is the ``base``: family and
+      version survive intact, so ``qwen2.5-coder`` never keys equal to
+      ``qwen3-coder`` or ``llama3.1``.
+
+    Returns ``None`` when nothing recognisable remains (an empty name,
+    or one made only of size/quant tokens): such names are unparseable
+    and callers fall back to exact string equality.
+    """
+    if not name or not isinstance(name, str):
+        return None
+    text = name.strip().lower().rsplit("/", 1)[-1]
+    if not text:
+        return None
+    head, sep, tag = text.partition(":")
+    tag_tokens = tag.split("-") if sep and tag != "latest" else []
+    size: Optional[str] = None
+    base_tokens: list[str] = []
+    for token in head.split("-") + tag_tokens:
+        if not token:
+            continue
+        if _SIZE_RE.match(token):
+            if size is None:
+                size = token
+        elif (
+            token in _FLAVOUR_TOKENS
+            or token in _FORMAT_TOKENS
+            or _QUANT_RE.match(token)
+        ):
+            continue
+        else:
+            base_tokens.append(token)
+    if not base_tokens:
+        return None
+    return "-".join(base_tokens), size
+
+
+def models_match(requested: str, available: str) -> bool:
+    """Whether a peer serving ``available`` can satisfy ``requested``.
+
+    True when the names are exactly equal (always — even for names the
+    normaliser cannot parse), or when both parse to the same key: equal
+    base, and sizes that agree whenever *both* sides state one. A 14B
+    peer therefore never satisfies a 7B request, while a request that
+    names no size accepts any size of the right model.
+
+    This is a heuristic over naming conventions, not proof of identity:
+    quantisation is ignored (a peer serving a 4-bit build matches) and
+    ``-instruct`` versus base builds of the same model and size are
+    treated as interchangeable. Underscore-joined name variants are not
+    normalised. When the distinction matters, use the exact name — the
+    distributor always prefers exact matches over normalised ones.
+    """
+    if requested == available:
+        return True
+    req = model_key(requested)
+    avl = model_key(available)
+    if req is None or avl is None:
+        return False
+    if req[0] != avl[0]:
+        return False
+    return req[1] is None or avl[1] is None or req[1] == avl[1]
 
 
 @dataclass
@@ -98,8 +201,20 @@ class Distributor:
                 "or set SWARM_PEERS"
             )
         self.model = model
-        with_model = [p for p in peers if model in (p.models or [])]
-        self.peers: list[Peer] = with_model if with_model else list(peers)
+        # Candidate tiers, best first: peers serving the model under its
+        # exact name; then peers serving the same model under a spelling
+        # models_match recognises (issue #47); then, as before, any peer
+        # at all — its client resolves to a model it actually has.
+        exact = [p for p in peers if model in (p.models or [])]
+        if exact:
+            self.peers: list[Peer] = exact
+        else:
+            matched = [
+                p
+                for p in peers
+                if any(models_match(model, name) for name in (p.models or []))
+            ]
+            self.peers = matched if matched else list(peers)
         factory = client_factory or (lambda peer: client_for_peer(peer, model))
         self._clients = {p.base_url: factory(p) for p in self.peers}
         self.counts: dict[str, int] = {p.base_url: 0 for p in self.peers}

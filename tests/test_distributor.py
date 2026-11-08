@@ -3,7 +3,13 @@ import time
 import pytest
 
 from swarm_agent.discovery import Peer
-from swarm_agent.distributor import Distributor, PeerStats, pick_peer
+from swarm_agent.distributor import (
+    Distributor,
+    PeerStats,
+    model_key,
+    models_match,
+    pick_peer,
+)
 from swarm_agent.ollama import SwarmError
 
 MODEL = "qwen2.5-coder:7b"
@@ -179,3 +185,111 @@ def test_pick_peer_tie_breaks_are_deterministic():
     y = _stats("http://y:1", 3.0, inflight=1)
     assert pick_peer([y, x]).base_url == "http://x:1"
     assert pick_peer([x, y]).base_url == "http://x:1"
+
+
+# -- model-name matching (issue #47) ------------------------------------------
+
+MLX_CODER_7B = "mlx-community/Qwen2.5-Coder-7B-Instruct-4bit"
+
+
+def test_model_key_normalises_ollama_and_mlx_spellings():
+    # The two spellings that must agree: Ollama's tag form and the MLX
+    # server's registry-prefixed, quant-suffixed form.
+    assert model_key(MODEL) == ("qwen2.5-coder", "7b")
+    assert model_key(MLX_CODER_7B) == ("qwen2.5-coder", "7b")
+    assert model_key("llama3.1:8b") == ("llama3.1", "8b")
+    assert model_key("qwen2.5-coder") == ("qwen2.5-coder", None)
+    # A bare :latest tag carries no information.
+    assert model_key("qwen2.5-coder:latest") == ("qwen2.5-coder", None)
+    # Unparseable: empty, or nothing left after the noise tokens.
+    assert model_key("") is None
+    assert model_key("7b") is None
+    assert model_key(None) is None
+
+
+def test_models_match_rules():
+    assert models_match(MODEL, MLX_CODER_7B)
+    assert models_match(MODEL, "qwen2.5-coder:7b-instruct-q4_K_M")
+    # Size disagreements and family/version disagreements never match.
+    assert not models_match(MODEL, "mlx-community/Qwen2.5-Coder-14B-Instruct-4bit")
+    assert not models_match(MODEL, "mlx-community/Qwen3-Coder-7B-Instruct-4bit")
+    assert not models_match(MODEL, "llama3.1:7b")
+    # A request with no size accepts any size of the right model.
+    assert models_match("qwen2.5-coder", MLX_CODER_7B.replace("7B", "32B"))
+
+
+def test_mlx_peer_selected_for_default_model():
+    # (a) The MLX peer is the only candidate for the default model, even
+    # though an unrelated peer is faster — exact filtering used to fall
+    # back to *all* peers here.
+    peers = [
+        Peer(base_url="http://chatty:11434", models=["llama3.1:8b"], latency_ms=0.5),
+        Peer(base_url="http://mlx:8080", models=[MLX_CODER_7B], latency_ms=9.0),
+    ]
+    dist = Distributor(peers, MODEL, client_factory=lambda peer: FakeClient("x"))
+    assert [p.base_url for p in dist.peers] == ["http://mlx:8080"]
+    assert dist.best_peer().base_url == "http://mlx:8080"
+
+
+def test_wrong_size_mlx_peer_not_selected():
+    # (b) A 14B build of the right model does not satisfy a 7B request:
+    # no tier matches, so selection falls back to all peers (as before).
+    peers = [
+        Peer(
+            base_url="http://mlx14:8080",
+            models=["mlx-community/Qwen2.5-Coder-14B-Instruct-4bit"],
+            latency_ms=1.0,
+        ),
+        Peer(base_url="http://chatty:11434", models=["llama3.1:8b"], latency_ms=2.0),
+    ]
+    dist = Distributor(peers, MODEL, client_factory=lambda peer: FakeClient("x"))
+    assert {p.base_url for p in dist.peers} == {
+        "http://mlx14:8080",
+        "http://chatty:11434",
+    }
+
+
+def test_different_family_not_selected():
+    # (c) Same size, wrong family/version: not a match either.
+    peers = [
+        Peer(
+            base_url="http://qwen3:8080",
+            models=["mlx-community/Qwen3-Coder-7B-Instruct-4bit"],
+            latency_ms=1.0,
+        ),
+        Peer(base_url="http://chatty:11434", models=["llama3.1:8b"], latency_ms=2.0),
+    ]
+    dist = Distributor(peers, MODEL, client_factory=lambda peer: FakeClient("x"))
+    assert {p.base_url for p in dist.peers} == {
+        "http://qwen3:8080",
+        "http://chatty:11434",
+    }
+
+
+def test_exact_match_beats_normalised_match():
+    # (d) When a peer serves the exact requested name, normalised-only
+    # peers are not candidates at all — however fast they are.
+    peers = [
+        Peer(base_url="http://mlx:8080", models=[MLX_CODER_7B], latency_ms=0.5),
+        Peer(base_url="http://exact:11434", models=[MODEL], latency_ms=50.0),
+    ]
+    dist = Distributor(peers, MODEL, client_factory=lambda peer: FakeClient("x"))
+    assert [p.base_url for p in dist.peers] == ["http://exact:11434"]
+
+
+def test_unparseable_names_behave_as_before():
+    # (e) Unparseable names match only by exact string equality.
+    assert models_match("7b", "7b")
+    assert not models_match("7b", MODEL)
+    assert not models_match(MODEL, "4bit")
+    # A peer whose only "model" is unparseable is reached only through
+    # the any-peer fallback, exactly as with exact filtering before.
+    peers = [
+        Peer(base_url="http://odd:11434", models=["4bit"], latency_ms=1.0),
+        Peer(base_url="http://chatty:11434", models=["llama3.1:8b"], latency_ms=2.0),
+    ]
+    dist = Distributor(peers, MODEL, client_factory=lambda peer: FakeClient("x"))
+    assert {p.base_url for p in dist.peers} == {
+        "http://odd:11434",
+        "http://chatty:11434",
+    }

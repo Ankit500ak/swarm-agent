@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 
 from . import prompts
-from .chunking import chunk_file
+from .chunking import chunk_file, estimate_tokens
 from .config import Config
 from .discovery import discover
 from .distributor import Distributor
@@ -90,6 +90,110 @@ def _gather_traceback_files(
     return found
 
 
+#: Index hits considered for related context before budget filtering.
+RELATED_SEARCH_K = 20
+
+_TRACE_NAME_RE = re.compile(r'File "[^"]+", line \d+, in ([A-Za-z_][\w.]*)')
+
+
+def _related_query(error_text: str, code_blocks: list[tuple[str, str]]) -> str:
+    """Search text for the index: the error plus what it points at."""
+    parts = [error_text]
+    parts.extend(path for path, _ in code_blocks)
+    parts.extend(_TRACE_NAME_RE.findall(error_text))
+    return "\n".join(parts)
+
+
+def _gather_related_context(
+    error_text: str,
+    repo_root: Path,
+    code_blocks: list[tuple[str, str]],
+    distributor: Distributor,
+    config: Config,
+) -> list[tuple[str, int, str]]:
+    """Chunks from *other* files that the repo index ranks as related.
+
+    Builds (or incrementally refreshes) the persistent index for
+    ``repo_root`` with the same client and model as the fix call itself,
+    searches it with the error text plus the traceback's file names and
+    identifiers, and returns ``(path, start_line, text)`` triples in the
+    index's ranking order. Files already in the prompt are excluded and
+    no chunk is returned twice.
+
+    The section is capped at the flow's chunk budget
+    (``config.chunk_tokens``, estimated with :func:`estimate_tokens`):
+    when the hits do not all fit, the related context is what shrinks -
+    the traceback files are never trimmed to make room for it.
+
+    Any failure - the index cannot be built, the search raises, the
+    client cannot embed - degrades to an empty list with a printed
+    note. Retrieval is a hint for the model, never a reason for the
+    fix itself to fail.
+    """
+    try:
+        # Deferred import: swarm_agent.index imports constants from
+        # this module, so it cannot be imported at module level.
+        from .index import RepoIndex
+
+        client = distributor.client_for(distributor.best_peer())
+        index = RepoIndex.build(
+            repo_root,
+            client=client,
+            model=config.model,
+            budget_tokens=config.chunk_tokens,
+        )
+        hits = index.search(
+            _related_query(error_text, code_blocks), k=RELATED_SEARCH_K
+        )
+    except Exception as exc:
+        print(
+            f"swarm-agent: repo index unavailable ({exc}); "
+            "continuing without related context"
+        )
+        return []
+
+    included = {path for path, _ in code_blocks}
+    seen: set[tuple[str, int]] = set()
+    remaining = config.chunk_tokens
+    related: list[tuple[str, int, str]] = []
+    for hit in hits:
+        path = hit["path"]
+        if path in included:
+            continue
+        key = (path, hit["start_line"])
+        if key in seen:
+            continue
+        seen.add(key)
+        cost = estimate_tokens(hit["text"])
+        if cost > remaining:
+            continue  # shrink the related context, not the traceback
+        remaining -= cost
+        related.append((path, hit["start_line"], hit["text"]))
+    return related
+
+
+def _format_related_context(related: list[tuple[str, int, str]]) -> str:
+    """The related chunks as a labelled section of the fix prompt."""
+    lines = [
+        "--- Related context (from repo index) ---",
+        "The chunks below are from other files in this repository that "
+        "the index ranked as most related to the error. They were not "
+        "named in the traceback, but the root cause may live in one of "
+        "them. If the fix belongs in one of these files, use its path "
+        "exactly as shown.",
+        "",
+    ]
+    for path, start_line, text in related:
+        lines.append(
+            f"FILE: {path} (lines from {start_line})\n```python\n{text}\n```"
+        )
+    lines.append(
+        "Fix the root cause. Reply with the unified diff only, "
+        "in a ```diff fence."
+    )
+    return "\n".join(lines)
+
+
 def fix_flow(
     error_text: str,
     repo_root: str | Path,
@@ -111,9 +215,19 @@ def fix_flow(
     else:
         print("swarm-agent: no traceback files found; diagnosing from the error alone")
 
+    related = _gather_related_context(
+        error_text, repo_root, code_blocks, distributor, config
+    )
+    if related:
+        print("swarm-agent: related context from index: "
+              + ", ".join(f"{p}:{ln}" for p, ln, _ in related))
+
+    user_content = prompts.build_fix_prompt(error_text, code_blocks)
+    if related:
+        user_content += "\n\n" + _format_related_context(related)
     messages = [
         {"role": "system", "content": prompts.FIX_SYSTEM},
-        {"role": "user", "content": prompts.build_fix_prompt(error_text, code_blocks)},
+        {"role": "user", "content": user_content},
     ]
     reply = distributor.ask(messages)
     if "NO_FIX_POSSIBLE" in reply and extract_diff(reply) is None:

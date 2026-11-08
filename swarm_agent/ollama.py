@@ -120,6 +120,24 @@ class OllamaClient:
             )
         return data["response"]
 
+    def embed(
+        self, texts: list[str], model: Optional[str] = None
+    ) -> list[list[float]]:
+        """Embed texts via ``/api/embed``; returns one vector per input text."""
+        payload = {"model": self._model(model), "input": texts}
+        data = self._request("/api/embed", payload=payload)
+        if not isinstance(data, dict) or "embeddings" not in data:
+            raise SwarmError(
+                f"unexpected /api/embed response from {self.base_url}"
+            )
+        vectors = data["embeddings"]
+        if len(vectors) != len(texts):
+            raise SwarmError(
+                f"/api/embed from {self.base_url} returned {len(vectors)} "
+                f"vectors for {len(texts)} texts"
+            )
+        return [[float(x) for x in vec] for vec in vectors]
+
 
 class MLXClient:
     """Client for an ``mlx_lm.server`` (OpenAI-compatible) peer."""

@@ -9,6 +9,7 @@ the verifying patcher.
 
 from __future__ import annotations
 
+import os
 import re
 import sys
 from pathlib import Path
@@ -19,8 +20,8 @@ from .config import Config
 from .discovery import discover
 from .distributor import Distributor
 from .ollama import SwarmError
-from .patcher import PatchError, apply_unified_diff, extract_diff
-from .runner import run_tests
+from .patcher import PatchError, apply_multi_file_diff, apply_unified_diff, extract_diff
+from .runner import parse_failures, run_tests
 
 NO_PEER_HINT = (
     "no Ollama peer found - start one with: ollama serve, or set SWARM_PEERS"
@@ -269,30 +270,268 @@ def fix_flow(
         print(f"swarm-agent: tests pass ({cmd})")
         return 0
 
-    print(f"swarm-agent: tests failed (exit {code}); asking the swarm for one repair")
-    fresh_blocks = []
-    for rel in changed:
-        path = repo_root / rel
-        if path.is_file():
-            chunks = chunk_file(path, budget_tokens=config.chunk_tokens)
-            fresh_blocks.append((rel, "\n".join(c.text for c in chunks)))
-    repair_messages = [
-        {"role": "system", "content": prompts.FIX_SYSTEM},
-        {"role": "user", "content": prompts.build_repair_prompt(error_text, tail, fresh_blocks)},
-    ]
-    repair_diff = extract_diff(distributor.ask(repair_messages))
-    if repair_diff:
-        try:
-            changed2 = apply_unified_diff(repo_root, repair_diff)
-            print(f"swarm-agent: repair applied to {', '.join(changed2)}")
-            code, tail = run_tests(cmd, repo_root)
-            if code == 0:
-                print(f"swarm-agent: tests pass after repair ({cmd})")
-                return 0
-        except PatchError as exc:
-            print(f"swarm-agent: repair diff did not apply: {exc}")
+    return _repair_loop(
+        error_text=error_text,
+        repo_root=repo_root,
+        config=config,
+        distributor=distributor,
+        cmd=cmd,
+        initial_diff=diff,
+        changed=changed,
+        related=related,
+        code=code,
+        tail=tail,
+    )
 
-    print(f"swarm-agent: tests still failing (exit {code}). Last output:")
+
+# --------------------------------------------------------------------------
+# repair loop v2 (issue #16)
+# --------------------------------------------------------------------------
+
+#: Repair attempts allowed after the initial fix, unless configured.
+DEFAULT_MAX_REPAIRS = 2
+
+
+def _max_repairs(config: Config) -> int:
+    """How many repair attempts may follow the initial fix.
+
+    A ``max_repairs`` attribute on the config object wins if one is
+    ever added to :class:`Config`; otherwise the ``SWARM_MAX_REPAIRS``
+    environment variable; otherwise :data:`DEFAULT_MAX_REPAIRS`.
+    Unparseable values degrade to the default and negative values to
+    zero - a loop bound is not a place to crash the flow.
+    """
+    value = getattr(config, "max_repairs", None)
+    if value is None:
+        raw = os.environ.get("SWARM_MAX_REPAIRS", "").strip()
+        if raw:
+            try:
+                value = int(raw)
+            except ValueError:
+                value = None
+    if value is None:
+        return DEFAULT_MAX_REPAIRS
+    try:
+        return max(0, int(value))
+    except (TypeError, ValueError):
+        return DEFAULT_MAX_REPAIRS
+
+
+def _infer_ecosystem(cmd: str) -> str:
+    """Best-guess ecosystem for :func:`parse_failures` from a test command."""
+    lowered = cmd.lower()
+    if "pytest" in lowered or "python" in lowered:
+        return "pytest"
+    if "jest" in lowered or "npm" in lowered or "node" in lowered:
+        return "jest"
+    return ""
+
+
+_DIFF_FILE_RE = re.compile(r"^\+\+\+ b/(.+)$", re.MULTILINE)
+
+
+def _diff_summary(diff_text: str) -> str:
+    """One-line summary of a diff, for the attempt history."""
+    if not diff_text:
+        return "no diff"
+    files = _DIFF_FILE_RE.findall(diff_text)
+    added = sum(
+        1
+        for line in diff_text.splitlines()
+        if line.startswith("+") and not line.startswith("+++")
+    )
+    removed = sum(
+        1
+        for line in diff_text.splitlines()
+        if line.startswith("-") and not line.startswith("---")
+    )
+    names = ", ".join(files) if files else "unknown file(s)"
+    return f"{names} (+{added}/-{removed})"
+
+
+def _current_state_blocks(
+    repo_root: Path, paths: list[str], config: Config
+) -> list[tuple[str, str]]:
+    """Current contents of ``paths`` as (display_path, text) blocks.
+
+    Chunked exactly like the traceback gatherer chunks files. Missing
+    files are skipped - a repair may have deleted one.
+    """
+    blocks: list[tuple[str, str]] = []
+    seen: set[str] = set()
+    for rel in paths:
+        if rel in seen:
+            continue
+        seen.add(rel)
+        target = repo_root / rel
+        if not target.is_file():
+            continue
+        chunks = chunk_file(target, budget_tokens=config.chunk_tokens)
+        blocks.append((rel, "\n".join(c.text for c in chunks)))
+    return blocks
+
+
+def _repair_loop(
+    *,
+    error_text: str,
+    repo_root: Path,
+    config: Config,
+    distributor: Distributor,
+    cmd: str,
+    initial_diff: str,
+    changed: list[str],
+    related: list[tuple[str, int, str]],
+    code: int,
+    tail: str,
+) -> int:
+    """Re-diagnose from structured failures until the tests pass or
+    the repair bound is reached. Returns the flow's exit code.
+
+    Each round feeds the model the original error, the previous
+    attempt's diff, and the structured failure records parsed from the
+    last test run (the frozen ``{"file", "test", "message"}`` shape of
+    issue #10, rendered by the re-diagnosis contract of issue #9),
+    plus the current contents of every file patched so far and of the
+    files the failures name.
+
+    Corrected diffs are applied with
+    :func:`apply_multi_file_diff`, which verifies against the
+    *current* contents - i.e. the state the previous attempts left
+    behind. A diff written against stale (pre-attempt) contents fails
+    verification, counts as a failed attempt, and leaves every file on
+    disk untouched; the loop then stops rather than guessing.
+    """
+    ecosystem = _infer_ecosystem(cmd)
+    max_repairs = _max_repairs(config)
+    failures = parse_failures(tail, ecosystem)
+    history: list[dict] = [
+        {
+            "attempt": 1,
+            "diff": initial_diff,
+            "outcome": f"tests failed (exit {code})",
+            "failures": failures,
+        }
+    ]
+    if max_repairs == 0:
+        print(
+            f"swarm-agent: tests still failing (exit {code}); "
+            "repairs disabled (max repairs = 0). Last output:"
+        )
+        print(tail)
+        return 1
+
+    changed_paths = list(changed)
+    previous_diff = initial_diff
+    for repair in range(1, max_repairs + 1):
+        attempt = repair + 1
+        print(
+            f"swarm-agent: tests failed (exit {code}); repair "
+            f"{repair}/{max_repairs} - re-diagnosing from "
+            f"{len(failures)} structured failure(s)"
+        )
+        block_paths = list(changed_paths)
+        for record in failures:
+            named = record.get("file") or ""
+            if (
+                named
+                and named not in block_paths
+                and (repo_root / named).is_file()
+            ):
+                block_paths.append(named)
+        blocks = _current_state_blocks(repo_root, block_paths, config)
+        user_content = prompts.build_rediagnosis_prompt(
+            error_text, previous_diff, failures, blocks, attempt=attempt
+        )
+        # The index context gathered for the first attempt can still
+        # help - but only for files no attempt has rewritten since;
+        # their gathered text would be stale.
+        fresh_related = [t for t in related if t[0] not in changed_paths]
+        if fresh_related:
+            user_content += "\n\n" + _format_related_context(fresh_related)
+        reply = distributor.ask(
+            [
+                {"role": "system", "content": prompts.REDIAGNOSIS_SYSTEM},
+                {"role": "user", "content": user_content},
+            ]
+        )
+        new_diff = extract_diff(reply)
+        if new_diff is None:
+            reason = (
+                "the swarm reported NO_FIX_POSSIBLE"
+                if "NO_FIX_POSSIBLE" in reply
+                else "the model returned no usable diff"
+            )
+            history.append(
+                {
+                    "attempt": attempt,
+                    "diff": "",
+                    "outcome": reason,
+                    "failures": failures,
+                }
+            )
+            print(f"swarm-agent: repair attempt {attempt}: {reason}; giving up")
+            break
+        try:
+            result = apply_multi_file_diff(repo_root, new_diff)
+        except PatchError as exc:
+            history.append(
+                {
+                    "attempt": attempt,
+                    "diff": new_diff,
+                    "outcome": (
+                        f"diff did not apply against current contents: {exc}"
+                    ),
+                    "failures": failures,
+                }
+            )
+            print(
+                f"swarm-agent: repair attempt {attempt}: diff did not "
+                f"apply ({exc}); nothing was written - giving up"
+            )
+            break
+        for path in result.changed_paths:
+            if path not in changed_paths:
+                changed_paths.append(path)
+        print(
+            f"swarm-agent: repair attempt {attempt} applied to "
+            f"{', '.join(result.changed_paths)}"
+        )
+        previous_diff = new_diff
+        code, tail = run_tests(cmd, repo_root)
+        if code == 0:
+            print(
+                f"swarm-agent: tests pass after repair - "
+                f"fixed on attempt {attempt} ({cmd})"
+            )
+            return 0
+        failures = parse_failures(tail, ecosystem)
+        history.append(
+            {
+                "attempt": attempt,
+                "diff": new_diff,
+                "outcome": f"tests failed (exit {code})",
+                "failures": failures,
+            }
+        )
+
+    print(
+        f"swarm-agent: giving up after {len(history)} attempt(s) "
+        f"(initial fix + up to {max_repairs} repair(s)). Attempt history:"
+    )
+    for entry in history:
+        print(
+            f"  attempt {entry['attempt']}: {_diff_summary(entry['diff'])}"
+            f" - {entry['outcome']} "
+            f"[{len(entry['failures'])} failing record(s)]"
+        )
+    if failures:
+        print("swarm-agent: last failures:")
+        for record in failures:
+            print(
+                f"  - {record.get('file', '')} :: {record.get('test', '')}"
+                f" - {record.get('message', '')}"
+            )
+    print("swarm-agent: last test output:")
     print(tail)
     return 1
 

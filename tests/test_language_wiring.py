@@ -1,1 +1,353 @@
-base64:IiIiTGFuZ3VhZ2Ugd2lyaW5nIChpc3N1ZSAjMjgpOiB0aGUgZmxvd3Mgc2VsZWN0IHByb21wdCBjb250cmFjdHMgYnkKZmlsZSBleHRlbnNpb24sIHZpYSB0aGUgc2VsZWN0b3JzIGxhbmRlZCBpbiBpc3N1ZSAjMi4KCi0gZml4OiB0aGUgd29ya2luZyBsYW5ndWFnZSBjb21lcyBmcm9tIHRoZSB0cmFjZWJhY2sncyBkZWVwZXN0IChsYXN0KQogIGdhdGhlcmVkIGZpbGU7IGl0IGRyaXZlcyB0aGUgc3lzdGVtIGNvbnRyYWN0IChgZml4X3N5c3RlbV9mb3JgKSwKICB0aGUgcHJvbXB0IGZlbmNlcyAoYGJ1aWxkX2ZpeF9wcm9tcHQobGFuZ3VhZ2U9Li4uKWApIGFuZCwgb24KICByZXBhaXJzLCB0aGUgcmUtZGlhZ25vc2lzIHByb21wdCAoYGJ1aWxkX3JlZGlhZ25vc2lzX3Byb21wdGApLgotIGdlbi10ZXN0czogdGhlIGNvbnRyYWN0IGNvbWVzIGZyb20gdGhlIHRhcmdldCBtb2R1bGUncyBleHRlbnNpb24uCi0gUHl0aG9uIGlzIGJ5dGUtaWRlbnRpY2FsIHRvIHRoZSBwcmUtd2lyaW5nIGJlaGF2aW91cjogdGhlIGxhbmd1YWdlCiAgInB5dGhvbiIgcmVzb2x2ZXMgdG8gdGhlIHZlcnkgc2FtZSBjb25zdGFudHMgYW5kIGJ1aWxkZXIgb3V0cHV0cwogIHRoZSBmbG93cyB1c2VkIGJlZm9yZSB0aGUgc2VsZWN0b3JzIGV4aXN0ZWQuCiIiIgoKaW1wb3J0IGhhc2hsaWIKaW1wb3J0IHJlCgppbXBvcnQgcHl0ZXN0Cgpmcm9tIHN3YXJtX2FnZW50IGltcG9ydCBhZ2VudCwgcHJvbXB0cwpmcm9tIHN3YXJtX2FnZW50LmNvbmZpZyBpbXBvcnQgQ29uZmlnCmZyb20gc3dhcm1fYWdlbnQucnVubmVyIGltcG9ydCBwYXJzZV9mYWlsdXJlcwoKCiMgLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KIyBmYWtlcyAoc2FtZSBzaGFwZSBhcyB0ZXN0X3JlcGFpcl9sb29wJ3M6IHNjcmlwdGVkIGNoYXQgKyBmYWtlIGVtYmVkKQojIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCgpjbGFzcyBTY3JpcHRlZENsaWVudDoKICAgICIiIkNoYXQgcmV0dXJucyB0aGUgbmV4dCBjYW5uZWQgcmVwbHk7IGVtYmVkIGlzIGJhZy1vZi13b3Jkcy4iIiIKCiAgICBESU0gPSA2NAoKICAgIGRlZiBfX2luaXRfXyhzZWxmLCByZXBsaWVzOiBsaXN0W3N0cl0pOgogICAgICAgIHNlbGYuX3JlcGxpZXMgPSBsaXN0KHJlcGxpZXMpCgogICAgZGVmIGNoYXQoc2VsZiwgbWVzc2FnZXMsIG1vZGVsPU5vbmUpOgogICAgICAgIGlmIHNlbGYuX3JlcGxpZXM6CiAgICAgICAgICAgIHJldHVybiBzZWxmLl9yZXBsaWVzLnBvcCgwKQogICAgICAgIHJldHVybiAiTk9fRklYX1BPU1NJQkxFIgoKICAgIEBzdGF0aWNtZXRob2QKICAgIGRlZiBfdmVjdG9yKHRleHQ6IHN0cikgLT4gbGlzdFtmbG9hdF06CiAgICAgICAgdmVjID0gWzAuMF0gKiBTY3JpcHRlZENsaWVudC5ESU0KICAgICAgICBmb3IgdG9rIGluIHJlLmZpbmRhbGwociJbYS16MC05X10rIiwgdGV4dC5sb3dlcigpKToKICAgICAgICAgICAgYnVja2V0ID0gaW50LmZyb21fYnl0ZXMoCiAgICAgICAgICAgICAgICBoYXNobGliLm1kNSh0b2suZW5jb2RlKCkpLmRpZ2VzdCgpWzo0XSwgImxpdHRsZSIKICAgICAgICAgICAgKSAlIFNjcmlwdGVkQ2xpZW50LkRJTQogICAgICAgICAgICB2ZWNbYnVja2V0XSArPSAxLjAKICAgICAgICByZXR1cm4gdmVjCgogICAgZGVmIGVtYmVkKHNlbGYsIHRleHRzLCBtb2RlbD1Ob25lKToKICAgICAgICByZXR1cm4gW3NlbGYuX3ZlY3Rvcih0KSBmb3IgdCBpbiB0ZXh0c10KCgpjbGFzcyBGYWtlRGlzdHJpYnV0b3I6CiAgICAiIiJTdGFuZHMgaW4gZm9yIERpc3RyaWJ1dG9yOiBgYXNrYCBjaGF0cywgYGNsaWVudF9mb3JgIGVtYmVkcy4iIiIKCiAgICBkZWYgX19pbml0X18oc2VsZiwgY2xpZW50OiBTY3JpcHRlZENsaWVudCk6CiAgICAgICAgc2VsZi5fY2xpZW50ID0gY2xpZW50CiAgICAgICAgc2VsZi5hc2tlZDogbGlzdCA9IFtdCgogICAgZGVmIGFzayhzZWxmLCBtZXNzYWdlcywgbW9kZWw9Tm9uZSk6CiAgICAgICAgc2VsZi5hc2tlZC5hcHBlbmQobWVzc2FnZXMpCiAgICAgICAgcmV0dXJuIHNlbGYuX2NsaWVudC5jaGF0KG1lc3NhZ2VzLCBtb2RlbD1tb2RlbCkKCiAgICBkZWYgYmVzdF9wZWVyKHNlbGYpOgogICAgICAgIHJldHVybiAiZmFrZS1wZWVyIgoKICAgIGRlZiBjbGllbnRfZm9yKHNlbGYsIHBlZXIpOgogICAgICAgIHJldHVybiBzZWxmLl9jbGllbnQKCgpkZWYgX2luc3RhbGwobW9ua2V5cGF0Y2gsIHJlcGxpZXMpIC0+IEZha2VEaXN0cmlidXRvcjoKICAgIGRpc3QgPSBGYWtlRGlzdHJpYnV0b3IoU2NyaXB0ZWRDbGllbnQocmVwbGllcykpCiAgICBtb25rZXlwYXRjaC5zZXRhdHRyKGFnZW50LCAiZ2V0X2Rpc3RyaWJ1dG9yIiwgbGFtYmRhIGNmZzogZGlzdCkKICAgIHJldHVybiBkaXN0CgoKZGVmIF9yZXBseShkaWZmX2JvZHk6IHN0cikgLT4gc3RyOgogICAgcmV0dXJuICJIZXJlIGlzIHRoZSBmaXg6XG5cbmBgYGRpZmZcbiIgKyBkaWZmX2JvZHkgKyAiXG5gYGBcbiIKCgojIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCiMgKGEpIGEgUHl0aG9uIGZpeCBwcm9kdWNlcyBleGFjdGx5IHRoZSBwcmUtd2lyaW5nIHByb21wdHMKIyAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQoKQ0FMQyA9ICJkZWYgYWRkKGEsIGIpOlxuICAgIHJldHVybiBhIC0gYlxuIgoKUFlfRVJST1IgPSAoCiAgICAiVHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOlxuIgogICAgJyAgRmlsZSAiY2FsYy5weSIsIGxpbmUgMiwgaW4gYWRkXG4nCiAgICAiICAgIHJldHVybiBhIC0gYlxuIgogICAgIlZhbHVlRXJyb3I6IGJvb21cbiIKKQoKUFlfRElGRiA9IF9yZXBseSgKICAgICItLS0gYS9jYWxjLnB5XG4iCiAgICAiKysrIGIvY2FsYy5weVxuIgogICAgIkBAIC0xLDIgKzEsMiBAQFxuIgogICAgIiBkZWYgYWRkKGEsIGIpOlxuIgogICAgIi0gICAgcmV0dXJuIGEgLSBiXG4iCiAgICAiKyAgICByZXR1cm4gYSArIGIiCikKCgpkZWYgdGVzdF9weXRob25fZml4X3Byb21wdHNfYXJlX2J5dGVfaWRlbnRpY2FsKG1vbmtleXBhdGNoLCB0bXBfcGF0aCk6CiAgICAodG1wX3BhdGggLyAiY2FsYy5weSIpLndyaXRlX3RleHQoQ0FMQywgZW5jb2Rpbmc9InV0Zi04IikKICAgIGRpc3QgPSBfaW5zdGFsbChtb25rZXlwYXRjaCwgW1BZX0RJRkZdKQoKICAgIHJjID0gYWdlbnQuZml4X2Zsb3coUFlfRVJST1IsIHRtcF9wYXRoLCBDb25maWcoKSwgYXBwbHk9RmFsc2UpCgogICAgYXNzZXJ0IHJjID09IDAKICAgIGFzc2VydCBsZW4oZGlzdC5hc2tlZCkgPT0gMQogICAgc3lzdGVtLCB1c2VyID0gZGlzdC5hc2tlZFswXVswXVsiY29udGVudCJdLCBkaXN0LmFza2VkWzBdWzFdWyJjb250ZW50Il0KICAgICMgVGhlIHN5c3RlbSBjb250cmFjdCBpcyB0aGUgdmVyeSBjb25zdGFudCB0aGUgZmxvdyB1c2VkIGJlZm9yZS4KICAgIGFzc2VydCBzeXN0ZW0gPT0gcHJvbXB0cy5GSVhfU1lTVEVNCiAgICBhc3NlcnQgc3lzdGVtIGlzIHByb21wdHMuZml4X3N5c3RlbV9mb3IoInB5dGhvbiIpCiAgICAjIFRoZSB1c2VyIHByb21wdCBlcXVhbHMgdGhlIGJ1aWxkZXJzJyBvdXRwdXQgd2l0aCBOTyBsYW5ndWFnZQogICAgIyBhcmd1bWVudCAodGhlIHByZS13aXJpbmcgY2FsbCkgLSBhbmQsIGVxdWl2YWxlbnRseSwgd2l0aCB0aGUKICAgICMgbGFuZ3VhZ2UgdGhlIHdpcmluZyBub3cgcGFzc2VzIGV4cGxpY2l0bHkuCiAgICBibG9ja3MgPSBhZ2VudC5fZ2F0aGVyX3RyYWNlYmFja19maWxlcyhQWV9FUlJPUiwgdG1wX3BhdGgsIENvbmZpZygpKQogICAgYXNzZXJ0IHVzZXIgPT0gcHJvbXB0cy5idWlsZF9maXhfcHJvbXB0KFBZX0VSUk9SLCBibG9ja3MpCiAgICBhc3NlcnQgdXNlciA9PSBwcm9tcHRzLmJ1aWxkX2ZpeF9wcm9tcHQoUFlfRVJST1IsIGJsb2NrcywgbGFuZ3VhZ2U9InB5dGhvbiIpCgoKIyAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQojIChiKSBhIEpTIGZpeCB0YWtlcyBpdHMgY29udHJhY3QgZnJvbSB0aGUgdHJhY2ViYWNrJ3MgZGVlcGVzdCBmaWxlCiMgLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KCkFQUF9KUyA9ICJmdW5jdGlvbiBhZGQoYSwgYikge1xuICByZXR1cm4gYSAtIGI7XG59XG4iClJVTk5FUl9QWSA9ICJkZWYgbWFpbigpOlxuICAgIHBhc3NcbiIKCiMgT3V0ZXJtb3N0IGZyYW1lIGlzIGEgUHl0aG9uIGZpbGU7IHRoZSBkZWVwZXN0ICh3aGVyZSBpdCBibGV3IHVwKSBpcyBKUy4KSlNfRVJST1IgPSAoCiAgICAiVHJhY2ViYWNrIChtb3N0IHJlY2VudCBjYWxsIGxhc3QpOlxuIgogICAgJyAgRmlsZSAicnVubmVyLnB5IiwgbGluZSAxMCwgaW4gbWFpblxuJwogICAgIiAgICBtYWluKClcbiIKICAgICcgIEZpbGUgImFwcC5qcyIsIGxpbmUgMiwgaW4gYWRkXG4nCiAgICAiICAgIHJldHVybiBhIC0gYjtcbiIKICAgICJUeXBlRXJyb3I6IGJvb21cbiIKKQoKSlNfRElGRiA9IF9yZXBseSgKICAgICItLS0gYS9hcHAuanNcbiIKICAgICIrKysgYi9hcHAuanNcbiIKICAgICJAQCAtMSwyICsxLDIgQEBcbiIKICAgICIgZnVuY3Rpb24gYWRkKGEsIGIpIHtcbiIKICAgICItICByZXR1cm4gYSAtIGI7XG4iCiAgICAiKyAgcmV0dXJuIGEgKyBiOyIKKQoKCmRlZiB0ZXN0X2pzX2ZpeF91c2VzX2pzX2NvbnRyYWN0X2Zyb21fZGVlcGVzdF9maWxlKG1vbmtleXBhdGNoLCB0bXBfcGF0aCk6CiAgICAodG1wX3BhdGggLyAicnVubmVyLnB5Iikud3JpdGVfdGV4dChSVU5ORVJfUFksIGVuY29kaW5nPSJ1dGYtOCIpCiAgICAodG1wX3BhdGggLyAiYXBwLmpzIikud3JpdGVfdGV4dChBUFBfSlMsIGVuY29kaW5nPSJ1dGYtOCIpCiAgICBkaXN0ID0gX2luc3RhbGwobW9ua2V5cGF0Y2gsIFtKU19ESUZGXSkKCiAgICByYyA9IGFnZW50LmZpeF9mbG93KEpTX0VSUk9SLCB0bXBfcGF0aCwgQ29uZmlnKCksIGFwcGx5PUZhbHNlKQoKICAgIGFzc2VydCByYyA9PSAwCiAgICBzeXN0ZW0sIHVzZXIgPSBkaXN0LmFza2VkWzBdWzBdWyJjb250ZW50Il0sIGRpc3QuYXNrZWRbMF1bMV1bImNvbnRlbnQiXQogICAgIyBTeXN0ZW06IHRoZSBKUyBjb250cmFjdCwgbm90IHRoZSBQeXRob24gb25lLiBUaGUgZGlzdGluZ3Vpc2hpbmcKICAgICMgcnVsZXMgYXJlIHJlYWQgZnJvbSB0aGUgcHJvbXB0cyBtb2R1bGUsIG5vdCBoYXJkY29kZWQgaGVyZS4KICAgIGFzc2VydCBzeXN0ZW0gPT0gcHJvbXB0cy5KU19GSVhfU1lTVEVNCiAgICBhc3NlcnQgc3lzdGVtICE9IHByb21wdHMuRklYX1NZU1RFTQogICAganNfb25seSA9IFsKICAgICAgICBsaW5lIGZvciBsaW5lIGluIHByb21wdHMuSlNfRklYX1NZU1RFTS5zcGxpdGxpbmVzKCkKICAgICAgICBpZiBsaW5lLnN0cmlwKCkgYW5kIGxpbmUgbm90IGluIHByb21wdHMuRklYX1NZU1RFTQogICAgXQogICAgYXNzZXJ0IGpzX29ubHkgYW5kIGFsbChsaW5lIGluIHN5c3RlbSBmb3IgbGluZSBpbiBqc19vbmx5KQogICAgIyBVc2VyOiBidWlsdCB3aXRoIHRoZSB3b3JraW5nIGxhbmd1YWdlIC0gSlMgZmVuY2VzIHRocm91Z2hvdXQsCiAgICAjIHdoZXJlIHRoZSBidWlsZGVycycgb2xkIGRlZmF1bHQgKGZpcnN0IGZpbGUgPSBydW5uZXIucHkpIHdvdWxkCiAgICAjIGhhdmUgcHJvZHVjZWQgUHl0aG9uIGZlbmNlcy4KICAgIGJsb2NrcyA9IGFnZW50Ll9nYXRoZXJfdHJhY2ViYWNrX2ZpbGVzKEpTX0VSUk9SLCB0bXBfcGF0aCwgQ29uZmlnKCkpCiAgICBhc3NlcnQgYmxvY2tzWy0xXVswXSA9PSAiYXBwLmpzIiAgIyBkZWVwZXN0IGZyYW1lIGlzIGxhc3QKICAgIGFzc2VydCB1c2VyID09IHByb21wdHMuYnVpbGRfZml4X3Byb21wdCgKICAgICAgICBKU19FUlJPUiwgYmxvY2tzLCBsYW5ndWFnZT0iamF2YXNjcmlwdCIKICAgICkKICAgIGFzc2VydCAiYGBgamF2YXNjcmlwdCIgaW4gdXNlcgogICAgYXNzZXJ0ICJgYGBweXRob24iIG5vdCBpbiB1c2VyCiAgICBhc3NlcnQgdXNlciAhPSBwcm9tcHRzLmJ1aWxkX2ZpeF9wcm9tcHQoSlNfRVJST1IsIGJsb2NrcykKCgojIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCiMgKGIyKSByZXBhaXJzIHJlLWRpYWdub3NlIGluIHRoZSBmaXgncyB3b3JraW5nIGxhbmd1YWdlIHRvbwojIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCgpBUFBfSlNfVFdPX0JVR1MgPSAoCiAgICAiZnVuY3Rpb24gYWRkKGEsIGIpIHtcbiAgcmV0dXJuIGEgLSBiO1xufVxuIgogICAgIlxuIgogICAgImZ1bmN0aW9uIHN1YihhLCBiKSB7XG4gIHJldHVybiBhICsgYjtcbn1cbiIKKQoKSlNfRVJST1JfT05FX0ZJTEUgPSAoCiAgICAiRXJyb3I6IGJvb21cbiIKICAgICcgIEZpbGUgImFwcC5qcyIsIGxpbmUgMiwgaW4gYWRkXG4nCiAgICAiICAgIHJldHVybiBhIC0gYjtcbiIKKQoKRElGRjEgPSBfcmVwbHkoCiAgICAiLS0tIGEvYXBwLmpzXG4iCiAgICAiKysrIGIvYXBwLmpzXG4iCiAgICAiQEAgLTEsMiArMSwyIEBAXG4iCiAgICAiIGZ1bmN0aW9uIGFkZChhLCBiKSB7XG4iCiAgICAiLSAgcmV0dXJuIGEgLSBiO1xuIgogICAgIisgIHJldHVybiBhICsgYjsiCikKCkRJRkYyID0gX3JlcGx5KAogICAgIi0tLSBhL2FwcC5qc1xuIgogICAgIisrKyBiL2FwcC5qc1xuIgogICAgIkBAIC01LDIgKzUsMiBAQFxuIgogICAgIiBmdW5jdGlvbiBzdWIoYSwgYikge1xuIgogICAgIi0gIHJldHVybiBhICsgYjtcbiIKICAgICIrICByZXR1cm4gYSAtIGI7IgopCgpKRVNUX1RBSUwgPSAoCiAgICAiRkFJTCB0ZXN0cy9hcHAudGVzdC5qc1xuIgogICAgIiAg4pePIHN1YiDigLogc3VidHJhY3RzXG4iCiAgICAiICAgIGV4cGVjdChyZWNlaXZlZCkudG9CZShleHBlY3RlZClcbiIKICAgICIgICAgRXhwZWN0ZWQ6IDJcbiIKICAgICIgICAgUmVjZWl2ZWQ6IDhcbiIKKQoKCmRlZiB0ZXN0X3JlcGFpcl9yZWRpYWdub3Npc19nZXRzX3RoZV93b3JraW5nX2xhbmd1YWdlKG1vbmtleXBhdGNoLCB0bXBfcGF0aCk6CiAgICAodG1wX3BhdGggLyAiYXBwLmpzIikud3JpdGVfdGV4dChBUFBfSlNfVFdPX0JVR1MsIGVuY29kaW5nPSJ1dGYtOCIpCiAgICBkaXN0ID0gX2luc3RhbGwobW9ua2V5cGF0Y2gsIFtESUZGMSwgRElGRjJdKQoKICAgICMgU2NyaXB0IHRoZSB0ZXN0IHJ1bnM6IGZpcnN0IHZlcmlmaWNhdGlvbiBmYWlscywgdGhlIHJlcGFpcidzIHBhc3Nlcy4KICAgIHJ1bnMgPSBpdGVyKFsoMSwgSkVTVF9UQUlMKSwgKDAsICJhbGwgZ3JlZW4iKV0pCiAgICBtb25rZXlwYXRjaC5zZXRhdHRyKGFnZW50LCAicnVuX3Rlc3RzIiwgbGFtYmRhIGNtZCwgcm9vdDogbmV4dChydW5zKSkKCiAgICAjIFNweSBvbiB0aGUgYnVpbGRlciAoZGVsZWdhdGluZyB0byB0aGUgcmVhbCBvbmUpIHRvIGNhcHR1cmUgaG93CiAgICAjIHRoZSByZXBhaXIgbG9vcCBjYWxscyBpdC4KICAgIHNlZW46IGRpY3QgPSB7fQogICAgcmVhbF9idWlsZGVyID0gcHJvbXB0cy5idWlsZF9yZWRpYWdub3Npc19wcm9tcHQKCiAgICBkZWYgc3B5KCphcmdzLCAqKmt3YXJncyk6CiAgICAgICAgc2VlblsiYXJncyJdID0gYXJncwogICAgICAgIHNlZW5bImt3YXJncyJdID0ga3dhcmdzCiAgICAgICAgcmV0dXJuIHJlYWxfYnVpbGRlcigqYXJncywgKiprd2FyZ3MpCgogICAgbW9ua2V5cGF0Y2guc2V0YXR0cihwcm9tcHRzLCAiYnVpbGRfcmVkaWFnbm9zaXNfcHJvbXB0Iiwgc3B5KQoKICAgIHJjID0gYWdlbnQuZml4X2Zsb3coCiAgICAgICAgSlNfRVJST1JfT05FX0ZJTEUsIHRtcF9wYXRoLCBDb25maWcoKSwgYXBwbHk9VHJ1ZSwgdGVzdF9jbWQ9Im5wbSB0ZXN0IgogICAgKQoKICAgIGFzc2VydCByYyA9PSAwCiAgICBhc3NlcnQgbGVuKGRpc3QuYXNrZWQpID09IDIgICMgaW5pdGlhbCBmaXggKyBvbmUgcmVwYWlyCiAgICBhc3NlcnQgc2Vlblsia3dhcmdzIl0uZ2V0KCJsYW5ndWFnZSIpID09ICJqYXZhc2NyaXB0IgogICAgYXNzZXJ0IHNlZW5bImt3YXJncyJdLmdldCgiYXR0ZW1wdCIpID09IDIKICAgICMgLi4uYW5kIGl0IHdhcyBmZWQgdGhlIHN0cnVjdHVyZWQgZmFpbHVyZXMgcGFyc2VkIGZyb20gdGhlIHJ1bi4KICAgIGFzc2VydCBzZWVuWyJhcmdzIl1bMl0gPT0gcGFyc2VfZmFpbHVyZXMoSkVTVF9UQUlMLCAiamVzdCIpCiAgICByZXBhaXJfdXNlciA9IGRpc3QuYXNrZWRbMV1bMV1bImNvbnRlbnQiXQogICAgYXNzZXJ0IGRpc3QuYXNrZWRbMV1bMF1bImNvbnRlbnQiXSA9PSBwcm9tcHRzLlJFRElBR05PU0lTX1NZU1RFTQogICAgYXNzZXJ0ICJGSUxFIChjdXJyZW50IHN0YXRlKTogYXBwLmpzXG5gYGBqYXZhc2NyaXB0IiBpbiByZXBhaXJfdXNlcgoKCiMgLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KIyAoYykgZ2VuLXRlc3RzIGZvciBhIEdvIG1vZHVsZSBzZWxlY3RzIHRoZSBHbyBjb250cmFjdAojIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCgpDQUxDX0dPID0gInBhY2thZ2UgY2FsY1xuXG5mdW5jIEFkZChhLCBiIGludCkgaW50IHsgcmV0dXJuIGEgLSBiIH1cbiIKCkdPX1NVSVRFID0gKAogICAgInBhY2thZ2UgY2FsY1xuXG5pbXBvcnQgXCJ0ZXN0aW5nXCJcblxuIgogICAgImZ1bmMgVGVzdEFkZCh0ICp0ZXN0aW5nLlQpIHtcbiIKICAgICJcdGlmIEFkZCgyLCAzKSAhPSA1IHtcbiIKICAgICJcdFx0dC5GYXRhbChcImJhZCBhZGRcIilcbiIKICAgICJcdH1cbiIKICAgICJ9IgopCgoKZGVmIHRlc3RfZ2VuX3Rlc3RzX2dvX3NlbGVjdHNfZ29fY29udHJhY3QobW9ua2V5cGF0Y2gsIHRtcF9wYXRoKToKICAgIHRhcmdldCA9IHRtcF9wYXRoIC8gImNhbGMuZ28iCiAgICB0YXJnZXQud3JpdGVfdGV4dChDQUxDX0dPLCBlbmNvZGluZz0idXRmLTgiKQogICAgZGlzdCA9IF9pbnN0YWxsKG1vbmtleXBhdGNoLCBbImBgYGdvXG4iICsgR09fU1VJVEUgKyAiXG5gYGBcbiJdKQoKICAgIGNvZGUgPSBhZ2VudC5nZW5fdGVzdHNfZmxvdyh0YXJnZXQsIENvbmZpZygpKQoKICAgIGFzc2VydCBjb2RlID09IEdPX1NVSVRFCiAgICBzeXN0ZW0sIHVzZXIgPSBkaXN0LmFza2VkWzBdWzBdWyJjb250ZW50Il0sIGRpc3QuYXNrZWRbMF1bMV1bImNvbnRlbnQiXQogICAgYXNzZXJ0IHN5c3RlbSA9PSBwcm9tcHRzLkdPX1RFU1RHRU5fU1lTVEVNCiAgICBhc3NlcnQgc3lzdGVtIGlzIHByb21wdHMudGVzdGdlbl9zeXN0ZW1fZm9yKCJnbyIpCiAgICBhc3NlcnQgdXNlciA9PSBwcm9tcHRzLmJ1aWxkX3Rlc3RnZW5fcHJvbXB0KAogICAgICAgICJjYWxjIiwgQ0FMQ19HTywgbGFuZ3VhZ2U9ImdvIgogICAgKQogICAgYXNzZXJ0ICJnbyB0ZXN0IiBpbiB1c2VyCgoKIyAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQojIChkKSBhbiB1bmtub3duIGV4dGVuc2lvbiBmYWxscyBiYWNrIHRvIHRoZSBQeXRob24gY29udHJhY3RzCiMgLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KCkxFR0FDWSA9ICIgICAgICAgSURFTlRJRklDQVRJT04gRElWSVNJT04uXG4gICAgICAgUFJPR1JBTS1JRC4gTEVHQUNZLlxuIgoKUFlfU1VJVEUgPSAiZGVmIHRlc3RfeCgpOlxuICAgIGFzc2VydCBUcnVlIgoKCmRlZiB0ZXN0X2dlbl90ZXN0c191bmtub3duX2V4dGVuc2lvbl9mYWxsc19iYWNrX3RvX3B5dGhvbigKICAgIG1vbmtleXBhdGNoLCB0bXBfcGF0aAopOgogICAgdGFyZ2V0ID0gdG1wX3BhdGggLyAibGVnYWN5LmNvYiIKICAgIHRhcmdldC53cml0ZV90ZXh0KExFR0FDWSwgZW5jb2Rpbmc9InV0Zi04IikKICAgIGRpc3QgPSBfaW5zdGFsbChtb25rZXlwYXRjaCwgWyJgYGBweXRob25cbiIgKyBQWV9TVUlURSArICJcbmBgYFxuIl0pCgogICAgY29kZSA9IGFnZW50Lmdlbl90ZXN0c19mbG93KHRhcmdldCwgQ29uZmlnKCkpCgogICAgYXNzZXJ0IGNvZGUgPT0gUFlfU1VJVEUKICAgIHN5c3RlbSwgdXNlciA9IGRpc3QuYXNrZWRbMF1bMF1bImNvbnRlbnQiXSwgZGlzdC5hc2tlZFswXVsxXVsiY29udGVudCJdCiAgICBhc3NlcnQgc3lzdGVtID09IHByb21wdHMuVEVTVEdFTl9TWVNURU0KICAgICMgRXhhY3RseSB0aGUgcHJlLXdpcmluZyAobm8tbGFuZ3VhZ2UpIGJ1aWxkZXIgb3V0cHV0LgogICAgYXNzZXJ0IHVzZXIgPT0gcHJvbXB0cy5idWlsZF90ZXN0Z2VuX3Byb21wdCgibGVnYWN5IiwgTEVHQUNZKQoKCmRlZiB0ZXN0X2ZpeF9sYW5ndWFnZV9oZWxwZXIoKToKICAgIGFzc2VydCBhZ2VudC5fZml4X2xhbmd1YWdlKFtdKSA9PSAicHl0aG9uIgogICAgYXNzZXJ0IGFnZW50Ll9maXhfbGFuZ3VhZ2UoWygiYS5weSIsICIiKV0pID09ICJweXRob24iCiAgICAjIFRoZSBkZWVwZXN0IChsYXN0KSBmaWxlIGRlY2lkZXMsIGluIGJvdGggZGlyZWN0aW9ucy4KICAgIGFzc2VydCBhZ2VudC5fZml4X2xhbmd1YWdlKFsoImEucHkiLCAiIiksICgiYi5qcyIsICIiKV0pID09ICJqYXZhc2NyaXB0IgogICAgYXNzZXJ0IGFnZW50Ll9maXhfbGFuZ3VhZ2UoWygiYS5nbyIsICIiKSwgKCJiLnB5IiwgIiIpXSkgPT0gInB5dGhvbiIKICAgIGFzc2VydCBhZ2VudC5fZml4X2xhbmd1YWdlKFsoImEudW5rbm93biIsICIiKV0pID09ICJweXRob24iCgoKIyAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQojIGdlbi10ZXN0cyB3cml0ZSBwYXRoOiBKUy9UUyB0YXJnZXRzIGdldCBqZXN0LXN0eWxlIGZpbGUgbmFtZXMKIyAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQoKSlNfU1VJVEUgPSAoCiAgICAiY29uc3QgeyBhZGQgfSA9IHJlcXVpcmUoJy4uL2FwcCcpO1xuXG4iCiAgICAidGVzdCgnYWRkcycsICgpID0+IHtcbiIKICAgICIgIGV4cGVjdChhZGQoMSwgMikpLnRvQmUoMyk7XG4iCiAgICAifSk7IgopCgoKZGVmIHRlc3RfZ2VuX3Rlc3RzX2pzX3dyaXRlX3VzZXNfamVzdF9maWxlbmFtZShtb25rZXlwYXRjaCwgdG1wX3BhdGgpOgogICAgdGFyZ2V0ID0gdG1wX3BhdGggLyAiYXBwLmpzIgogICAgdGFyZ2V0LndyaXRlX3RleHQoQVBQX0pTLCBlbmNvZGluZz0idXRmLTgiKQogICAgZGlzdCA9IF9pbnN0YWxsKG1vbmtleXBhdGNoLCBbImBgYGphdmFzY3JpcHRcbiIgKyBKU19TVUlURSArICJcbmBgYFxuIl0pCiAgICBtb25rZXlwYXRjaC5jaGRpcih0bXBfcGF0aCkKCiAgICBjb2RlID0gYWdlbnQuZ2VuX3Rlc3RzX2Zsb3codGFyZ2V0LCBDb25maWcoKSwgd3JpdGU9VHJ1ZSkKCiAgICBhc3NlcnQgY29kZSA9PSBKU19TVUlURQogICAgYXNzZXJ0IGRpc3QuYXNrZWRbMF1bMF1bImNvbnRlbnQiXSA9PSBwcm9tcHRzLkpTX1RFU1RHRU5fU1lTVEVNCiAgICBvdXQgPSB0bXBfcGF0aCAvICJ0ZXN0cyIgLyAiYXBwLnRlc3QuanMiCiAgICBhc3NlcnQgb3V0LmlzX2ZpbGUoKQogICAgYXNzZXJ0IG91dC5yZWFkX3RleHQoZW5jb2Rpbmc9InV0Zi04IikgPT0gSlNfU1VJVEUgKyAiXG4iCg==
+"""Language wiring (issue #28): the flows select prompt contracts by
+file extension, via the selectors landed in issue #2.
+
+- fix: the working language comes from the traceback's deepest (last)
+  gathered file; it drives the system contract (`fix_system_for`),
+  the prompt fences (`build_fix_prompt(language=...)`) and, on
+  repairs, the re-diagnosis prompt (`build_rediagnosis_prompt`).
+- gen-tests: the contract comes from the target module's extension.
+- Python is byte-identical to the pre-wiring behaviour: the language
+  "python" resolves to the very same constants and builder outputs
+  the flows used before the selectors existed.
+"""
+
+import hashlib
+import re
+
+import pytest
+
+from swarm_agent import agent, prompts
+from swarm_agent.config import Config
+from swarm_agent.runner import parse_failures
+
+
+# --------------------------------------------------------------------------
+# fakes (same shape as test_repair_loop's: scripted chat + fake embed)
+# --------------------------------------------------------------------------
+
+class ScriptedClient:
+    """Chat returns the next canned reply; embed is bag-of-words."""
+
+    DIM = 64
+
+    def __init__(self, replies: list[str]):
+        self._replies = list(replies)
+
+    def chat(self, messages, model=None):
+        if self._replies:
+            return self._replies.pop(0)
+        return "NO_FIX_POSSIBLE"
+
+    @staticmethod
+    def _vector(text: str) -> list[float]:
+        vec = [0.0] * ScriptedClient.DIM
+        for tok in re.findall(r"[a-z0-9_]+", text.lower()):
+            bucket = int.from_bytes(
+                hashlib.md5(tok.encode()).digest()[:4], "little"
+            ) % ScriptedClient.DIM
+            vec[bucket] += 1.0
+        return vec
+
+    def embed(self, texts, model=None):
+        return [self._vector(t) for t in texts]
+
+
+class FakeDistributor:
+    """Stands in for Distributor: `ask` chats, `client_for` embeds."""
+
+    def __init__(self, client: ScriptedClient):
+        self._client = client
+        self.asked: list = []
+
+    def ask(self, messages, model=None):
+        self.asked.append(messages)
+        return self._client.chat(messages, model=model)
+
+    def best_peer(self):
+        return "fake-peer"
+
+    def client_for(self, peer):
+        return self._client
+
+
+def _install(monkeypatch, replies) -> FakeDistributor:
+    dist = FakeDistributor(ScriptedClient(replies))
+    monkeypatch.setattr(agent, "get_distributor", lambda cfg: dist)
+    return dist
+
+
+def _reply(diff_body: str) -> str:
+    return "Here is the fix:\n\n```diff\n" + diff_body + "\n```\n"
+
+
+# --------------------------------------------------------------------------
+# (a) a Python fix produces exactly the pre-wiring prompts
+# --------------------------------------------------------------------------
+
+CALC = "def add(a, b):\n    return a - b\n"
+
+PY_ERROR = (
+    "Traceback (most recent call last):\n"
+    '  File "calc.py", line 2, in add\n'
+    "    return a - b\n"
+    "ValueError: boom\n"
+)
+
+PY_DIFF = _reply(
+    "--- a/calc.py\n"
+    "+++ b/calc.py\n"
+    "@@ -1,2 +1,2 @@\n"
+    " def add(a, b):\n"
+    "-    return a - b\n"
+    "+    return a + b"
+)
+
+
+def test_python_fix_prompts_are_byte_identical(monkeypatch, tmp_path):
+    (tmp_path / "calc.py").write_text(CALC, encoding="utf-8")
+    dist = _install(monkeypatch, [PY_DIFF])
+
+    rc = agent.fix_flow(PY_ERROR, tmp_path, Config(), apply=False)
+
+    assert rc == 0
+    assert len(dist.asked) == 1
+    system, user = dist.asked[0][0]["content"], dist.asked[0][1]["content"]
+    # The system contract is the very constant the flow used before.
+    assert system == prompts.FIX_SYSTEM
+    assert system is prompts.fix_system_for("python")
+    # The user prompt equals the builders' output with NO language
+    # argument (the pre-wiring call) - and, equivalently, with the
+    # language the wiring now passes explicitly.
+    blocks = agent._gather_traceback_files(PY_ERROR, tmp_path, Config())
+    assert user == prompts.build_fix_prompt(PY_ERROR, blocks)
+    assert user == prompts.build_fix_prompt(PY_ERROR, blocks, language="python")
+
+
+# --------------------------------------------------------------------------
+# (b) a JS fix takes its contract from the traceback's deepest file
+# --------------------------------------------------------------------------
+
+APP_JS = "function add(a, b) {\n  return a - b;\n}\n"
+RUNNER_PY = "def main():\n    pass\n"
+
+# Outermost frame is a Python file; the deepest (where it blew up) is JS.
+JS_ERROR = (
+    "Traceback (most recent call last):\n"
+    '  File "runner.py", line 10, in main\n'
+    "    main()\n"
+    '  File "app.js", line 2, in add\n'
+    "    return a - b;\n"
+    "TypeError: boom\n"
+)
+
+JS_DIFF = _reply(
+    "--- a/app.js\n"
+    "+++ b/app.js\n"
+    "@@ -1,2 +1,2 @@\n"
+    " function add(a, b) {\n"
+    "-  return a - b;\n"
+    "+  return a + b;"
+)
+
+
+def test_js_fix_uses_js_contract_from_deepest_file(monkeypatch, tmp_path):
+    (tmp_path / "runner.py").write_text(RUNNER_PY, encoding="utf-8")
+    (tmp_path / "app.js").write_text(APP_JS, encoding="utf-8")
+    dist = _install(monkeypatch, [JS_DIFF])
+
+    rc = agent.fix_flow(JS_ERROR, tmp_path, Config(), apply=False)
+
+    assert rc == 0
+    system, user = dist.asked[0][0]["content"], dist.asked[0][1]["content"]
+    # System: the JS contract, not the Python one. The distinguishing
+    # rules are read from the prompts module, not hardcoded here.
+    assert system == prompts.JS_FIX_SYSTEM
+    assert system != prompts.FIX_SYSTEM
+    js_only = [
+        line for line in prompts.JS_FIX_SYSTEM.splitlines()
+        if line.strip() and line not in prompts.FIX_SYSTEM
+    ]
+    assert js_only and all(line in system for line in js_only)
+    # User: built with the working language - JS fences throughout,
+    # where the builders' old default (first file = runner.py) would
+    # have produced Python fences.
+    blocks = agent._gather_traceback_files(JS_ERROR, tmp_path, Config())
+    assert blocks[-1][0] == "app.js"  # deepest frame is last
+    assert user == prompts.build_fix_prompt(
+        JS_ERROR, blocks, language="javascript"
+    )
+    assert "```javascript" in user
+    assert "```python" not in user
+    assert user != prompts.build_fix_prompt(JS_ERROR, blocks)
+
+
+# --------------------------------------------------------------------------
+# (b2) repairs re-diagnose in the fix's working language too
+# --------------------------------------------------------------------------
+
+APP_JS_TWO_BUGS = (
+    "function add(a, b) {\n  return a - b;\n}\n"
+    "\n"
+    "function sub(a, b) {\n  return a + b;\n}\n"
+)
+
+JS_ERROR_ONE_FILE = (
+    "Error: boom\n"
+    '  File "app.js", line 2, in add\n'
+    "    return a - b;\n"
+)
+
+DIFF1 = _reply(
+    "--- a/app.js\n"
+    "+++ b/app.js\n"
+    "@@ -1,2 +1,2 @@\n"
+    " function add(a, b) {\n"
+    "-  return a - b;\n"
+    "+  return a + b;"
+)
+
+DIFF2 = _reply(
+    "--- a/app.js\n"
+    "+++ b/app.js\n"
+    "@@ -5,2 +5,2 @@\n"
+    " function sub(a, b) {\n"
+    "-  return a + b;\n"
+    "+  return a - b;"
+)
+
+JEST_TAIL = (
+    "FAIL tests/app.test.js\n"
+    "  ● sub › subtracts\n"
+    "    expect(received).toBe(expected)\n"
+    "    Expected: 2\n"
+    "    Received: 8\n"
+)
+
+
+def test_repair_rediagnosis_gets_the_working_language(monkeypatch, tmp_path):
+    (tmp_path / "app.js").write_text(APP_JS_TWO_BUGS, encoding="utf-8")
+    dist = _install(monkeypatch, [DIFF1, DIFF2])
+
+    # Script the test runs: first verification fails, the repair's passes.
+    runs = iter([(1, JEST_TAIL), (0, "all green")])
+    monkeypatch.setattr(agent, "run_tests", lambda cmd, root: next(runs))
+
+    # Spy on the builder (delegating to the real one) to capture how
+    # the repair loop calls it.
+    seen: dict = {}
+    real_builder = prompts.build_rediagnosis_prompt
+
+    def spy(*args, **kwargs):
+        seen["args"] = args
+        seen["kwargs"] = kwargs
+        return real_builder(*args, **kwargs)
+
+    monkeypatch.setattr(prompts, "build_rediagnosis_prompt", spy)
+
+    rc = agent.fix_flow(
+        JS_ERROR_ONE_FILE, tmp_path, Config(), apply=True, test_cmd="npm test"
+    )
+
+    assert rc == 0
+    assert len(dist.asked) == 2  # initial fix + one repair
+    assert seen["kwargs"].get("language") == "javascript"
+    assert seen["kwargs"].get("attempt") == 2
+    # ...and it was fed the structured failures parsed from the run.
+    assert seen["args"][2] == parse_failures(JEST_TAIL, "jest")
+    repair_user = dist.asked[1][1]["content"]
+    assert dist.asked[1][0]["content"] == prompts.REDIAGNOSIS_SYSTEM
+    assert "FILE (current state): app.js\n```javascript" in repair_user
+
+
+# --------------------------------------------------------------------------
+# (c) gen-tests for a Go module selects the Go contract
+# --------------------------------------------------------------------------
+
+CALC_GO = "package calc\n\nfunc Add(a, b int) int { return a - b }\n"
+
+GO_SUITE = (
+    "package calc\n\nimport \"testing\"\n\n"
+    "func TestAdd(t *testing.T) {\n"
+    "\tif Add(2, 3) != 5 {\n"
+    "\t\tt.Fatal(\"bad add\")\n"
+    "\t}\n"
+    "}"
+)
+
+
+def test_gen_tests_go_selects_go_contract(monkeypatch, tmp_path):
+    target = tmp_path / "calc.go"
+    target.write_text(CALC_GO, encoding="utf-8")
+    dist = _install(monkeypatch, ["```go\n" + GO_SUITE + "\n```\n"])
+
+    code = agent.gen_tests_flow(target, Config())
+
+    assert code == GO_SUITE
+    system, user = dist.asked[0][0]["content"], dist.asked[0][1]["content"]
+    assert system == prompts.GO_TESTGEN_SYSTEM
+    assert system is prompts.testgen_system_for("go")
+    assert user == prompts.build_testgen_prompt(
+        "calc", CALC_GO, language="go"
+    )
+    assert "go test" in user
+
+
+# --------------------------------------------------------------------------
+# (d) an unknown extension falls back to the Python contracts
+# --------------------------------------------------------------------------
+
+LEGACY = "       IDENTIFICATION DIVISION.\n       PROGRAM-ID. LEGACY.\n"
+
+PY_SUITE = "def test_x():\n    assert True"
+
+
+def test_gen_tests_unknown_extension_falls_back_to_python(
+    monkeypatch, tmp_path
+):
+    target = tmp_path / "legacy.cob"
+    target.write_text(LEGACY, encoding="utf-8")
+    dist = _install(monkeypatch, ["```python\n" + PY_SUITE + "\n```\n"])
+
+    code = agent.gen_tests_flow(target, Config())
+
+    assert code == PY_SUITE
+    system, user = dist.asked[0][0]["content"], dist.asked[0][1]["content"]
+    assert system == prompts.TESTGEN_SYSTEM
+    # Exactly the pre-wiring (no-language) builder output.
+    assert user == prompts.build_testgen_prompt("legacy", LEGACY)
+
+
+def test_fix_language_helper():
+    assert agent._fix_language([]) == "python"
+    assert agent._fix_language([("a.py", "")]) == "python"
+    # The deepest (last) file decides, in both directions.
+    assert agent._fix_language([("a.py", ""), ("b.js", "")]) == "javascript"
+    assert agent._fix_language([("a.go", ""), ("b.py", "")]) == "python"
+    assert agent._fix_language([("a.unknown", "")]) == "python"
+
+
+# --------------------------------------------------------------------------
+# gen-tests write path: JS/TS targets get jest-style file names
+# --------------------------------------------------------------------------
+
+JS_SUITE = (
+    "const { add } = require('../app');\n\n"
+    "test('adds', () => {\n"
+    "  expect(add(1, 2)).toBe(3);\n"
+    "});"
+)
+
+
+def test_gen_tests_js_write_uses_jest_filename(monkeypatch, tmp_path):
+    target = tmp_path / "app.js"
+    target.write_text(APP_JS, encoding="utf-8")
+    dist = _install(monkeypatch, ["```javascript\n" + JS_SUITE + "\n```\n"])
+    monkeypatch.chdir(tmp_path)
+
+    code = agent.gen_tests_flow(target, Config(), write=True)
+
+    assert code == JS_SUITE
+    assert dist.asked[0][0]["content"] == prompts.JS_TESTGEN_SYSTEM
+    out = tmp_path / "tests" / "app.test.js"
+    assert out.is_file()
+    assert out.read_text(encoding="utf-8") == JS_SUITE + "\n"

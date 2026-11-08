@@ -4,85 +4,24 @@ The distributor owns the peer list and the failure policy:
 
 - Peers that serve the requested model are preferred; if none do, any
   healthy peer is used (its client resolves to a model it actually has).
-- :meth:`Distributor.map_units` schedules *latency-weighted*: each peer
-  carries an exponentially-weighted moving average (EWMA) of how long
-  its units actually take, seeded from the latency discovery measured.
-  Whenever a unit is handed out, :func:`pick_peer` gives it to the peer
-  with the lowest predicted wait — ``in-flight units x EWMA`` — so
-  faster peers naturally cycle through more units than slower ones,
-  and the balance shifts mid-run as real timings replace the seeds.
-- A peer whose work raises is marked *down*; the failed unit goes back
-  on the pending queue and is reassigned to the surviving peers. A unit
-  that has failed on every peer ends up holding its exception as its
-  result, so callers can report it instead of crashing.
-- Results always come back in input order, and ``counts`` records how
-  many units each peer completed.
+- :meth:`Distributor.map_units` assigns units round-robin, one worker
+  thread per peer.
+- A peer whose work raises is marked *down*; the failed unit and everything
+  still queued behind it are reassigned, round-robin again, to the
+  surviving peers. A unit that has failed on every peer ends up holding its
+  exception as its result, so callers can report it instead of crashing.
+- Results always come back in input order, and ``counts`` records how many
+  units each peer completed.
 """
 
 from __future__ import annotations
 
 import threading
-import time
 from collections import deque
-from dataclasses import dataclass
-from typing import Callable, Iterable, Optional
+from typing import Callable, Optional
 
 from .discovery import Peer
 from .ollama import SwarmError, client_for_peer
-
-# EWMA smoothing factor for per-peer unit durations: high enough to react
-# within a handful of units, low enough that one slow call is not destiny.
-_EWMA_ALPHA = 0.3
-# Floor so a peer that answered in microseconds still has a positive
-# predicted wait while it is busy (an idle peer's wait is exactly 0).
-_MIN_EWMA_MS = 0.01
-# Seed for peers discovery could not time (latency_ms == 0): deliberately
-# pessimistic, so measured peers win the first picks and this peer's own
-# first timings quickly replace the guess.
-_DEFAULT_EWMA_MS = 1000.0
-
-
-@dataclass
-class PeerStats:
-    """Live scheduling state for one peer.
-
-    ``ewma_ms`` is the moving average of completed-unit durations;
-    ``inflight`` counts units handed to this peer and not yet finished.
-    Kept as plain data so :func:`pick_peer` stays a pure function of it.
-    """
-
-    peer: Peer
-    ewma_ms: float
-    inflight: int = 0
-    down: bool = False
-
-
-def _seed_ewma(peer: Peer) -> float:
-    return peer.latency_ms if peer.latency_ms > 0 else _DEFAULT_EWMA_MS
-
-
-def _ewma_update(current: float, sample_ms: float) -> float:
-    updated = _EWMA_ALPHA * sample_ms + (1.0 - _EWMA_ALPHA) * current
-    return max(updated, _MIN_EWMA_MS)
-
-
-def pick_peer(stats: Iterable[PeerStats]) -> Optional[Peer]:
-    """Choose which peer gets the next unit. Pure and deterministic.
-
-    Among peers that are not down, the winner has the lowest predicted
-    wait (``inflight x ewma_ms``); ties break toward the lower EWMA,
-    then toward the lexicographically smaller base URL, so the same
-    stats always produce the same pick. Returns ``None`` when there is
-    nothing to pick (empty input, or every peer down).
-    """
-    candidates = [s for s in stats if not s.down]
-    if not candidates:
-        return None
-    best = min(
-        candidates,
-        key=lambda s: (s.inflight * s.ewma_ms, s.ewma_ms, s.peer.base_url),
-    )
-    return best.peer
 
 
 class Distributor:
@@ -104,15 +43,6 @@ class Distributor:
         self._clients = {p.base_url: factory(p) for p in self.peers}
         self.counts: dict[str, int] = {p.base_url: 0 for p in self.peers}
         self.down: set[str] = set()
-        self._stats: dict[str, PeerStats] = {
-            p.base_url: PeerStats(peer=p, ewma_ms=_seed_ewma(p))
-            for p in self.peers
-        }
-
-    # -- introspection ---------------------------------------------------------
-    def peer_stats(self) -> dict[str, PeerStats]:
-        """A snapshot of the scheduling stats, keyed by base URL."""
-        return dict(self._stats)
 
     # -- single calls --------------------------------------------------------
     def best_peer(self) -> Peer:
@@ -134,84 +64,64 @@ class Distributor:
     def map_units(self, units: list, fn: Callable) -> list:
         """Run ``fn(client, unit)`` for every unit, spread across the swarm.
 
-        One worker thread per peer pulls units from a shared queue, but a
-        worker may only take the next unit when :func:`pick_peer` selects
-        its peer — so units flow toward the peer with the lowest predicted
-        wait, and a fast peer ends up running more of the batch. ``fn``
-        receives the client of the peer the unit was assigned to. Returns
-        results in input order; a unit that failed everywhere holds the
-        exception instance as its result.
+        ``fn`` receives the client of the peer the unit was assigned to.
+        Returns results in input order; a unit that failed everywhere holds
+        the exception instance as its result.
         """
         units = list(units)
         results: list = [None] * len(units)
         if not units:
             return results
 
-        total = len(units)
         pending: deque[tuple[int, object]] = deque(enumerate(units))
         attempts: dict[int, int] = {}
-        finished = 0
-        cond = threading.Condition()
-        stats = self._stats
+        active: list[Peer] = list(self.peers)
+        lock = threading.Lock()
 
-        def worker(peer: Peer) -> None:
-            nonlocal finished
-            st = stats[peer.base_url]
-            client = self._clients[peer.base_url]
-            while True:
-                with cond:
-                    while True:
-                        if finished >= total or st.down:
-                            return
-                        if pending:
-                            chosen = pick_peer(stats.values())
-                            if chosen is None:
-                                return
-                            if chosen.base_url == peer.base_url:
-                                idx, unit = pending.popleft()
-                                st.inflight += 1
-                                break
-                        # Not our turn (or nothing pending yet): wait for
-                        # the next state change. The timeout is a safety
-                        # net so a missed notification can never deadlock
-                        # the batch; completions notify immediately.
-                        cond.wait(timeout=0.05)
-                started = time.perf_counter()
-                try:
-                    value = fn(client, unit)
-                except Exception as exc:  # peer is presumed dead
-                    with cond:
-                        st.inflight -= 1
-                        st.down = True
-                        self.down.add(peer.base_url)
-                        attempts[idx] = attempts.get(idx, 0) + 1
-                        if attempts[idx] >= len(self.peers):
-                            results[idx] = exc
-                            finished += 1
-                        else:
-                            pending.appendleft((idx, unit))
-                        cond.notify_all()
-                    return
-                elapsed_ms = (time.perf_counter() - started) * 1000.0
-                with cond:
-                    st.inflight -= 1
-                    st.ewma_ms = _ewma_update(st.ewma_ms, elapsed_ms)
+        while pending and active:
+            # Round-robin assignment of the pending units across active peers.
+            queues: dict[str, deque] = {p.base_url: deque() for p in active}
+            for k, item in enumerate(list(pending)):
+                queues[active[k % len(active)].base_url].append(item)
+            pending.clear()
+            failed: deque[tuple[int, object]] = deque()
+
+            def worker(peer: Peer) -> None:
+                client = self._clients[peer.base_url]
+                queue = queues[peer.base_url]
+                while queue:
+                    idx, unit = queue.popleft()
+                    try:
+                        value = fn(client, unit)
+                    except Exception as exc:  # peer is presumed dead
+                        with lock:
+                            self.down.add(peer.base_url)
+                            attempts[idx] = attempts.get(idx, 0) + 1
+                            rest = [(idx, unit)] + list(queue)
+                            queue.clear()
+                            for r_idx, r_unit in rest:
+                                if attempts.get(r_idx, 0) >= len(self.peers):
+                                    results[r_idx] = exc
+                                else:
+                                    failed.append((r_idx, r_unit))
+                        return
                     results[idx] = value
-                    self.counts[peer.base_url] += 1
-                    finished += 1
-                    cond.notify_all()
+                    with lock:
+                        self.counts[peer.base_url] += 1
 
-        threads = [
-            threading.Thread(target=worker, args=(peer,), daemon=True)
-            for peer in self.peers
-            if peer.base_url not in self.down
-        ]
-        for t in threads:
-            t.start()
-        for t in threads:
-            t.join()
+            threads = [
+                threading.Thread(target=worker, args=(peer,), daemon=True)
+                for peer in active
+            ]
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join()
 
-        # Anything still pending has no live peer left to run it.
+            active = [p for p in active if p.base_url not in self.down]
+            pending = failed
+
+        # Anything still pending has no live peer left to run on.
         for idx, _unit in pending:
             if results[idx] is None:
                 results[idx] = SwarmError("all swarm peers are down")

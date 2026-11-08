@@ -1,0 +1,64 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.2.0, pluggy-1.7.0
+rootdir: /home/hatch/workspace/swarm-agent-ankit/examples/cross_file_crash
+configfile: pytest.ini
+testpaths: tests
+collected 2 items
+
+tests/test_checkout.py FF                                                [100%]
+
+=================================== FAILURES ===================================
+_________________________ test_total_applies_discount __________________________
+
+    def test_total_applies_discount():
+        # 499 paise x 2, less 10%.
+>       assert checkout_total([("pen", 2)]) == pytest.approx(898.2)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_checkout.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+items = [('pen', 2)]
+
+    def checkout_total(items):
+        """Return the basket total in paise, after the discount.
+    
+        ``items`` is a list of ``(sku, qty)`` pairs.
+        """
+        total = 0
+        for sku, qty in items:
+            price = get_price(sku)
+>           total += price * qty * 0.9
+                     ^^^^^^^^^^^^^^^^^
+E           TypeError: can't multiply sequence by non-int of type 'float'
+
+shop/checkout.py:14: TypeError
+____________________________ test_total_single_item ____________________________
+
+    def test_total_single_item():
+        # 1299 paise x 1, less 10%.
+>       assert checkout_total([("notebook", 1)]) == pytest.approx(1169.1)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_checkout.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+items = [('notebook', 1)]
+
+    def checkout_total(items):
+        """Return the basket total in paise, after the discount.
+    
+        ``items`` is a list of ``(sku, qty)`` pairs.
+        """
+        total = 0
+        for sku, qty in items:
+            price = get_price(sku)
+>           total += price * qty * 0.9
+                     ^^^^^^^^^^^^^^^^^
+E           TypeError: can't multiply sequence by non-int of type 'float'
+
+shop/checkout.py:14: TypeError
+=========================== short test summary info ============================
+FAILED tests/test_checkout.py::test_total_applies_discount - TypeError: can't...
+FAILED tests/test_checkout.py::test_total_single_item - TypeError: can't mult...
+============================== 2 failed in 0.04s ===============================

@@ -351,3 +351,84 @@ def test_gen_tests_js_write_uses_jest_filename(monkeypatch, tmp_path):
     out = tmp_path / "tests" / "app.test.js"
     assert out.is_file()
     assert out.read_text(encoding="utf-8") == JS_SUITE + "\n"
+
+
+# --------------------------------------------------------------------------
+# (e) related context fences each chunk with its own file's language
+# --------------------------------------------------------------------------
+
+RELATED_PY_TEXT = (
+    "def discounted_total(prices, rate):\n"
+    "    return sum(prices) * rate"
+)
+RELATED_JS_TEXT = (
+    "function total(prices) {\n"
+    "  return prices.length;\n"
+    "}"
+)
+
+
+def test_related_context_fences_chunks_by_language(monkeypatch, tmp_path):
+    # A Python fix whose index-supplied related context mixes files:
+    # each related block must open with its own language's fence.
+    (tmp_path / "calc.py").write_text(CALC, encoding="utf-8")
+    dist = _install(monkeypatch, [PY_DIFF])
+    related = [
+        ("pricing.py", 1, RELATED_PY_TEXT),
+        ("widget.js", 4, RELATED_JS_TEXT),
+    ]
+    monkeypatch.setattr(
+        agent, "_gather_related_context", lambda *args: related
+    )
+
+    rc = agent.fix_flow(PY_ERROR, tmp_path, Config(), apply=False)
+
+    assert rc == 0
+    user = dist.asked[0][1]["content"]
+    label = "Related context (from repo index)"
+    assert label in user
+    section = user[user.index(label):]
+    # The Python chunk still opens with the python fence...
+    assert "FILE: pricing.py (lines from 1)\n```python\n" in section
+    assert RELATED_PY_TEXT in section
+    # ...and the JavaScript chunk with the javascript fence, not python.
+    assert "FILE: widget.js (lines from 4)\n```javascript\n" in section
+    assert RELATED_JS_TEXT in section
+    assert "FILE: widget.js (lines from 4)\n```python" not in section
+
+
+def test_format_related_context_mixed_languages():
+    section = agent._format_related_context([
+        ("calc.go", 7, "func Add(a, b int) int { return a - b }"),
+        ("lib.rs", 2, "pub fn add(a: i32, b: i32) -> i32 { a - b }"),
+        ("notes.txt", 1, "not code at all"),
+    ])
+    assert "FILE: calc.go (lines from 7)\n```go\n" in section
+    assert "FILE: lib.rs (lines from 2)\n```rust\n" in section
+    # Unknown extensions degrade to the Python fence, as the
+    # selectors themselves fall back to Python.
+    assert "FILE: notes.txt (lines from 1)\n```python\n" in section
+
+
+def test_format_related_context_python_is_byte_identical():
+    # The pre-fix formatter hardcoded ```python for every chunk; an
+    # all-Python related list must produce exactly that output still.
+    related = [
+        ("pricing.py", 1, RELATED_PY_TEXT),
+        ("calc.py", 9, "x = 1"),
+    ]
+    expected = "\n".join([
+        "--- Related context (from repo index) ---",
+        "The chunks below are from other files in this repository that "
+        "the index ranked as most related to the error. They were not "
+        "named in the traceback, but the root cause may live in one of "
+        "them. If the fix belongs in one of these files, use its path "
+        "exactly as shown.",
+        "",
+        "FILE: pricing.py (lines from 1)\n```python\n"
+        + RELATED_PY_TEXT + "\n```",
+        "FILE: calc.py (lines from 9)\n```python\nx = 1\n```",
+        "Fix the root cause. Reply with the unified diff only, "
+        "in a ```diff fence.",
+    ])
+    assert agent._format_related_context(related) == expected

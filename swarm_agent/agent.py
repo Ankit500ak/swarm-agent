@@ -185,8 +185,12 @@ def _format_related_context(related: list[tuple[str, int, str]]) -> str:
         "",
     ]
     for path, start_line, text in related:
+        # Each chunk is fenced with its own file's language (via the
+        # same selectors as the fix prompt itself); Python resolves
+        # to "python", so Python chunks render exactly as before.
+        fence = prompts.FENCE_LANGUAGES[prompts.language_for_path(path)]
         lines.append(
-            f"FILE: {path} (lines from {start_line})\n```python\n{text}\n```"
+            f"FILE: {path} (lines from {start_line})\n```{fence}\n{text}\n```"
         )
     lines.append(
         "Fix the root cause. Reply with the unified diff only, "

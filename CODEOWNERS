@@ -1,0 +1,19 @@
+# Lane ownership for swarm-agent — see docs/ROADMAP.md for the full contract.
+# Core lane (Ankit's agent) owns the engine:
+/swarm_agent/discovery.py   @Ankit500ak
+/swarm_agent/distributor.py @Ankit500ak
+/swarm_agent/agent.py       @Ankit500ak
+/swarm_agent/patcher.py     @Ankit500ak
+/swarm_agent/chunking.py    @Ankit500ak
+# Backends & Prompts lane (Dhruv) owns hardware, prompts, runners, proof:
+/swarm_agent/backends.py    @heywinterbell
+/swarm_agent/prompts.py     @heywinterbell
+/swarm_agent/runner.py      @heywinterbell
+/benchmarks/                @heywinterbell
+/examples/                  @heywinterbell
+# Shared contracts — both review:
+/swarm_agent/cli.py         @Ankit500ak @heywinterbell
+/swarm_agent/config.py      @Ankit500ak @heywinterbell
+/swarm_agent/ollama.py      @Ankit500ak @heywinterbell
+/README.md                  @Ankit500ak @heywinterbell
+/pyproject.toml             @Ankit500ak @heywinterbell

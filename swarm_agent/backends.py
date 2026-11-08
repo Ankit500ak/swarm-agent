@@ -31,9 +31,14 @@ def _sysctl(name: str) -> str | None:
 def _memory_gb() -> float | None:
     if platform.system() == "Darwin":
         raw = _sysctl("hw.memsize")
-        if raw and raw.isdigit():
-            return round(int(raw) / (1024 ** 3), 1)
-        return None
+        try:
+            # sysctl returns a plain byte count, e.g. "17179869184".
+            # Parse with int() rather than str.isdigit() so stray
+            # whitespace / a leading sign does not silently lose the
+            # value, and a non-numeric reply degrades to None.
+            return round(int(raw) / (1024 ** 3), 1) if raw else None
+        except (TypeError, ValueError):
+            return None
     try:  # Linux
         pages = os.sysconf("SC_PHYS_PAGES")
         page_size = os.sysconf("SC_PAGE_SIZE")
@@ -59,7 +64,8 @@ def hardware_report() -> dict:
         "unified_memory_gb": None,
     }
     if apple_silicon:
-        report["chip"] = _sysctl("machdep.cpu.brand_string")
+        # An empty sysctl reply means "unknown", not a chip named "".
+        report["chip"] = _sysctl("machdep.cpu.brand_string") or None
         report["unified_memory_gb"] = report["memory_gb"]
     return report
 
@@ -78,10 +84,19 @@ def mlx_available() -> bool:
         return False
 
 
-def recommendations(report: dict | None = None) -> list[str]:
-    """Human-readable guidance: which backend and model size fit this box."""
+def recommendations(report: dict | None = None, mlx: bool | None = None) -> list[str]:
+    """Human-readable guidance: which backend and model size fit this box.
+
+    ``mlx`` overrides the live :func:`mlx_available` probe (a socket
+    connect to localhost:8080). Pass it in tests and in ``doctor``-style
+    callers that already probed; leave it as ``None`` for the normal
+    live behaviour. This keeps the function deterministic in tests
+    without changing what the CLI does.
+    """
     if report is None:
         report = hardware_report()
+    if mlx is None:
+        mlx = mlx_available()
     tips: list[str] = []
     mem = report.get("unified_memory_gb") or report.get("memory_gb")
 
@@ -97,7 +112,7 @@ def recommendations(report: dict | None = None) -> list[str]:
                 tips.append("16GB unified memory: stick to qwen2.5-coder:7b (or 14b at low context).")
             else:
                 tips.append("Under 16GB unified memory: qwen2.5-coder:7b at modest context, or lean on bigger swarm peers.")
-        if mlx_available():
+        if mlx:
             tips.append("MLX detected: add it as a peer (mlx_lm.server) - it is often the fastest backend on this chip.")
         else:
             tips.append("MLX not detected: `pip install mlx-lm` and run `mlx_lm.server` to add this Mac as an MLX peer.")

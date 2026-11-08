@@ -9,7 +9,7 @@ your lane, don't edit it; open an issue instead.
 
 | Lane | Who | Owns |
 |---|---|---|
-| **Core** | Ankit (via Jaat Bhai, his agent) | `swarm_agent/discovery.py`, `swarm_agent/distributor.py`, `swarm_agent/agent.py`, `swarm_agent/patcher.py`, `swarm_agent/chunking.py` + their tests |
+| **Core** | Ankit (via Jaat Bhai, his agent) | `swarm_agent/discovery.py`, `swarm_agent/distributor.py`, `swarm_agent/agent.py`, `swarm_agent/patcher.py`, `swarm_agent/chunking.py`, `swarm_agent/index.py` (from Phase 3) + their tests |
 | **Backends & Prompts** | Dhruv (`@heywinterbell`) | `swarm_agent/backends.py`, `swarm_agent/prompts.py`, `swarm_agent/runner.py`, `benchmarks/`, `examples/` + their tests |
 | **Shared contracts** | Both — coordinate first | `swarm_agent/cli.py`, `swarm_agent/config.py`, `swarm_agent/ollama.py`, `README.md`, `pyproject.toml`, `docs/` |
 
@@ -39,7 +39,11 @@ distribution with failover, AST-aware chunking, verified patching,
 50 tests. Verified against stub servers; live-hardware validation is
 Phase 2's job.
 
-### Phase 2 — Real hardware, real models (current)
+### Phase 2 — Real hardware, real models (in progress)
+
+*The hardware-validation items (real-Mac checks, live benchmarks)
+continue in parallel with Phase 3 — they are blocked on machines,
+not on code.*
 
 Prove the swarm on real machines and real models, and harden the
 backends.
@@ -55,11 +59,26 @@ backends.
 Exit criteria: `doctor` correct on a real Mac; a two-machine swarm
 run benchmarked and written up; v0.2.0 tagged.
 
-### Phase 3 — Repository intelligence
+### Phase 3 — Repository intelligence (current, opened 2026-11-08)
 
-Persistent repo index (embeddings over chunks, reused across runs),
-cross-file context retrieval for `fix`, multi-file patches, repair
-loop v2 (test failure → re-diagnosis with history), session memory.
+The agent stops reading repositories from scratch on every run, and
+learns to fix things that span more than one file. Eight tasks,
+split half-and-half across the lanes:
+
+- **Core lane:** persistent repo index (`swarm_agent/index.py` —
+  chunks embedded once, reused across runs, mtime-invalidated);
+  cross-file context retrieval for `fix` (the traceback's neighbours
+  join the prompt); multi-file patches (atomic, all-or-nothing);
+  repair loop v2 (structured failure + attempt history, bounded
+  retries).
+- **Backends & Prompts lane:** prompt contracts v3 (multi-file diff
+  format, repair re-diagnosis, index summaries — in `prompts.py`);
+  structured test-failure parsing (`runner.py` — the repair loop's
+  input contract); fix-benchmark (seeded-bug repos, published
+  success rates); multi-file example projects for the demos.
+
+Exit criteria: `fix` resolves a seeded two-file bug end-to-end on a
+local model; the fix-benchmark table is published; v0.3.0 tagged.
 
 ### Phase 4 — Distribution & polish
 

@@ -5,6 +5,7 @@
 /swarm_agent/agent.py       @Ankit500ak
 /swarm_agent/patcher.py     @Ankit500ak
 /swarm_agent/chunking.py    @Ankit500ak
+/swarm_agent/index.py       @Ankit500ak
 # Backends & Prompts lane (Dhruv) owns hardware, prompts, runners, proof:
 /swarm_agent/backends.py    @heywinterbell
 /swarm_agent/prompts.py     @heywinterbell

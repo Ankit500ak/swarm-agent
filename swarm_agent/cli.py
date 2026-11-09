@@ -10,6 +10,8 @@ Subcommands:
 - ``swarm``      - show the peers that make up your swarm.
 - ``ask``        - one quick question to the fastest peer.
 - ``doctor``     - hardware report, backend recommendations, peer health.
+- ``sessions``   - Level 2 orchestrator: run tasks as parallel sessions,
+                   each in its own git worktree, optionally pinned to a peer.
 
 Exit codes: 0 success - 1 the swarm or the workflow failed - 2 bad usage.
 """
@@ -20,7 +22,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from . import __version__, agent, backends, prompts
+from . import __version__, agent, backends, orchestrator, prompts
 from .config import Config, load_config
 from .discovery import discover
 from .ollama import SwarmError
@@ -64,6 +66,42 @@ def _build_parser() -> argparse.ArgumentParser:
     p_ask.add_argument("prompt", nargs="+", help="the question")
 
     sub.add_parser("doctor", help="hardware report + peer health")
+
+    p_sess = sub.add_parser(
+        "sessions", help="Level 2 orchestrator: parallel task sessions")
+    sess_sub = p_sess.add_subparsers(dest="sessions_command")
+
+    p_spawn = sess_sub.add_parser("spawn", help="queue a session in its own worktree")
+    p_spawn.add_argument("--repo", default=".", help="repository root (default: cwd)")
+    p_spawn.add_argument("--kind", required=True,
+                         choices=list(orchestrator.SESSION_KINDS),
+                         help="which flow the session runs")
+    p_spawn.add_argument("--peer", help="pin the session to one peer base URL")
+    p_spawn.add_argument("--prompt", help="prompt text (kind: ask)")
+    p_spawn.add_argument("--question", help="question about the code (kind: analyze)")
+    p_spawn.add_argument("--target", help="module path, relative to the repo (kind: gen-tests)")
+    p_spawn.add_argument("--file", help="read the error log from this file (kind: fix)")
+    p_spawn.add_argument("--apply", action="store_true",
+                         help="apply the fix instead of a dry run (kind: fix)")
+
+    p_run = sess_sub.add_parser("run", help="run one queued session, or all of them")
+    p_run.add_argument("id", nargs="?", help="session id (default: run all queued)")
+    p_run.add_argument("--repo", default=".", help="repository root (default: cwd)")
+    p_run.add_argument("--workers", type=int, default=4,
+                       help="parallel sessions when running all (default: 4)")
+
+    p_list = sess_sub.add_parser("list", help="list sessions for a repository")
+    p_list.add_argument("--repo", default=".", help="repository root (default: cwd)")
+
+    p_stop = sess_sub.add_parser("stop", help="stop a queued session")
+    p_stop.add_argument("id", help="session id")
+    p_stop.add_argument("--repo", default=".", help="repository root (default: cwd)")
+
+    p_clean = sess_sub.add_parser("clean", help="remove a finished session's worktree")
+    p_clean.add_argument("id", help="session id")
+    p_clean.add_argument("--repo", default=".", help="repository root (default: cwd)")
+    p_clean.add_argument("--delete-branch", action="store_true",
+                         help="also delete the session's swarm/<id> branch")
     return parser
 
 
@@ -138,6 +176,72 @@ def _cmd_doctor(args: argparse.Namespace) -> int:
     return 0
 
 
+def _session_payload(args: argparse.Namespace) -> dict:
+    if args.kind == "ask":
+        return {"prompt": args.prompt or ""}
+    if args.kind == "analyze":
+        return {"question": args.question}
+    if args.kind == "gen-tests":
+        return {"target": args.target or ""}
+    if args.kind == "fix":
+        if not args.file:
+            raise SwarmError("sessions spawn --kind fix needs --file <error log>")
+        try:
+            error_text = Path(args.file).read_text(
+                encoding="utf-8", errors="replace")
+        except OSError as exc:
+            raise SwarmError(f"cannot read --file {args.file}: {exc}") from exc
+        return {"error": error_text, "apply": bool(args.apply)}
+    return {}
+
+
+def _print_session(session) -> None:
+    peer = session.peer or "(swarm)"
+    print(f"{session.id}  {session.status:<8} {session.kind:<10} {peer:<28} "
+          f"{session.worktree}")
+
+
+def _cmd_sessions(args: argparse.Namespace) -> int:
+    if not getattr(args, "sessions_command", None):
+        print("usage: swarm-agent sessions {spawn|run|list|stop|clean}",
+              file=sys.stderr)
+        return 2
+    config = _config_from_args(args)
+    orch = orchestrator.Orchestrator(args.repo, config)
+    if args.sessions_command == "spawn":
+        session = orch.spawn(
+            args.kind, _session_payload(args), peer=args.peer)
+        _print_session(session)
+        return 0
+    if args.sessions_command == "run":
+        if args.id:
+            finished = [orch.run(args.id)]
+        else:
+            finished = orch.run_all(max_workers=args.workers)
+        for session in finished:
+            _print_session(session)
+            if session.status == "failed":
+                print(f"  error: {session.error}", file=sys.stderr)
+        if not finished:
+            print("no queued sessions")
+        return 1 if any(s.status == "failed" for s in finished) else 0
+    if args.sessions_command == "list":
+        sessions = orch.list()
+        if not sessions:
+            print("no sessions")
+            return 0
+        for session in sessions:
+            _print_session(session)
+        return 0
+    if args.sessions_command == "stop":
+        _print_session(orch.stop(args.id))
+        return 0
+    if args.sessions_command == "clean":
+        _print_session(orch.clean(args.id, delete_branch=args.delete_branch))
+        return 0
+    return 2
+
+
 def _cmd_ask(args: argparse.Namespace) -> int:
     config = _config_from_args(args)
     distributor = agent.get_distributor(config)
@@ -182,6 +286,8 @@ def main(argv: list[str] | None = None) -> int:
             return _cmd_ask(args)
         if args.command == "doctor":
             return _cmd_doctor(args)
+        if args.command == "sessions":
+            return _cmd_sessions(args)
     except SwarmError as exc:
         print(f"swarm-agent: {exc}", file=sys.stderr)
         return 1

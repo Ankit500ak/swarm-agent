@@ -48,7 +48,12 @@ def _fake_flows(record: list, reply: str = "ok") -> dict:
 
 
 def _orchestrator(repo: Path, record: list, reply: str = "ok") -> Orchestrator:
-    return Orchestrator(repo, Config(), flows=_fake_flows(record, reply))
+    # Phase 1 semantics are about dispatch, so these run flows
+    # in-process where the record list can observe them; process
+    # isolation itself is covered by test_orchestrator_phase2.py.
+    return Orchestrator(
+        repo, Config(), flows=_fake_flows(record, reply), in_process=True
+    )
 
 
 # -- spawn / worktrees -------------------------------------------------------
@@ -123,7 +128,7 @@ def test_failed_flow_marks_session_failed(repo: Path) -> None:
         raise RuntimeError("peer exploded")
 
     flows = {kind: boom for kind in ("ask", "analyze", "gen-tests", "fix")}
-    orch = Orchestrator(repo, Config(), flows=flows)
+    orch = Orchestrator(repo, Config(), flows=flows, in_process=True)
     session = orch.spawn("ask", {"prompt": "hi"})
     finished = orch.run(session.id)
     assert finished.status == "failed"
@@ -152,7 +157,7 @@ def test_run_all_executes_sessions_concurrently(repo: Path) -> None:
         return "done"
 
     flows = {kind: slow for kind in ("ask", "analyze", "gen-tests", "fix")}
-    orch = Orchestrator(repo, Config(), flows=flows)
+    orch = Orchestrator(repo, Config(), flows=flows, in_process=True)
     ids = [orch.spawn("ask", {"prompt": f"q{i}"}).id for i in range(3)]
     finished = orch.run_all(max_workers=3)
     assert [s.status for s in finished] == ["done"] * 3

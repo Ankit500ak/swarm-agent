@@ -12,6 +12,8 @@ Subcommands:
 - ``doctor``     - hardware report, backend recommendations, peer health.
 - ``sessions``   - Level 2 orchestrator: run tasks as parallel sessions,
                    each in its own git worktree, optionally pinned to a peer.
+- ``serve``      - Level 1 gateway: expose the swarm as an
+                   OpenAI-compatible API so OpenCode can run on it.
 
 Exit codes: 0 success - 1 the swarm or the workflow failed - 2 bad usage.
 """
@@ -22,7 +24,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from . import __version__, agent, backends, orchestrator, prompts, tui
+from . import __version__, agent, backends, orchestrator, prompts, server, tui
 from .config import Config, load_config
 from .discovery import discover
 from .ollama import SwarmError
@@ -66,6 +68,17 @@ def _build_parser() -> argparse.ArgumentParser:
     p_ask.add_argument("prompt", nargs="+", help="the question")
 
     sub.add_parser("doctor", help="hardware report + peer health")
+
+    p_serve = sub.add_parser(
+        "serve", help="serve the swarm as an OpenAI-compatible API (for OpenCode)")
+    p_serve.add_argument("--host", default=server.DEFAULT_HOST,
+                         help=f"bind address (default: {server.DEFAULT_HOST}; "
+                              "use 0.0.0.0 to expose on the LAN)")
+    p_serve.add_argument("--port", type=int, default=server.DEFAULT_PORT,
+                         help=f"port (default: {server.DEFAULT_PORT})")
+    p_serve.add_argument("--api-key", default=None,
+                         help="require this key as a Bearer token on /v1/* "
+                              "(or set SWARM_SERVE_API_KEY)")
 
     p_sess = sub.add_parser(
         "sessions", help="Level 2 orchestrator: parallel task sessions")
@@ -326,6 +339,10 @@ def main(argv: list[str] | None = None) -> int:
             return _cmd_ask(args)
         if args.command == "doctor":
             return _cmd_doctor(args)
+        if args.command == "serve":
+            config = _config_from_args(args)
+            return server.serve(
+                config, host=args.host, port=args.port, api_key=args.api_key)
         if args.command == "sessions":
             return _cmd_sessions(args)
     except SwarmError as exc:

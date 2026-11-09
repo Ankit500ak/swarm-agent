@@ -22,7 +22,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from . import __version__, agent, backends, orchestrator, prompts
+from . import __version__, agent, backends, orchestrator, prompts, tui
 from .config import Config, load_config
 from .discovery import discover
 from .ollama import SwarmError
@@ -106,6 +106,16 @@ def _build_parser() -> argparse.ArgumentParser:
     p_clean.add_argument("--repo", default=".", help="repository root (default: cwd)")
     p_clean.add_argument("--delete-branch", action="store_true",
                          help="also delete the session's swarm/<id> branch")
+
+    p_watch = sess_sub.add_parser(
+        "watch", help="live dashboard: one pane per session (TUI)")
+    p_watch.add_argument("--repo", default=".", help="repository root (default: cwd)")
+    p_watch.add_argument("--interval", type=float, default=1.0,
+                         help="refresh seconds (default: 1.0)")
+    p_watch.add_argument("--once", action="store_true",
+                         help="print a single frame and exit")
+    p_watch.add_argument("--width", type=int, default=tui.DEFAULT_WIDTH,
+                         help="pane width in columns (default: 80)")
     return parser
 
 
@@ -207,9 +217,17 @@ def _print_session(session) -> None:
 
 def _cmd_sessions(args: argparse.Namespace) -> int:
     if not getattr(args, "sessions_command", None):
-        print("usage: swarm-agent sessions {spawn|run|list|stop|show|clean}",
+        print("usage: swarm-agent sessions {spawn|run|list|stop|show|clean|watch}",
               file=sys.stderr)
         return 2
+    if args.sessions_command == "watch":
+        return tui.watch(
+            args.repo,
+            interval=args.interval,
+            iterations=1 if args.once else None,
+            width=args.width,
+            clear=not args.once,
+        )
     config = _config_from_args(args)
     orch = orchestrator.Orchestrator(args.repo, config)
     if args.sessions_command == "spawn":

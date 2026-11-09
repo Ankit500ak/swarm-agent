@@ -1,10 +1,10 @@
 """Level 2 - the multi-session orchestrator.
 
-Phase 1: run several agent tasks at once, each in its own terminal
-session, each isolated in its own **git worktree**, and each optionally
-**pinned to one peer** on the LAN - so one machine crunches the
-refactor while another writes tests, and no two sessions ever fight
-over the same files.
+Run several agent tasks at once, each as its own session, each
+isolated in its own **git worktree**, and each optionally **pinned to
+one peer** on the LAN - so one machine crunches the refactor while
+another writes tests, and no two sessions ever fight over the same
+files.
 
 A session wraps one of the existing flows (``ask`` / ``analyze`` /
 ``gen-tests`` / ``fix``) with:
@@ -14,17 +14,25 @@ A session wraps one of the existing flows (``ask`` / ``analyze`` /
 - a persistent record in ``<repo>/.swarm/sessions.json`` so sessions
   survive across CLI invocations;
 - a per-session :class:`~swarm_agent.config.Config`: when a peer is
-  pinned, discovery is restricted to that peer only.
+  pinned, discovery is restricted to that peer only;
+- its own log file at ``<repo>/.swarm/logs/<session-id>.log`` - the
+  session's "terminal scrollback".
 
-Sessions are executed by :meth:`Orchestrator.run` (one) or
-:meth:`Orchestrator.run_all` (all queued, on a thread pool). Phase 1
-stopping is cooperative: only a *queued* session can be stopped - a
-running flow is never killed mid-flight.
+Phase 2 execution model: every session flow runs in a **child
+process** (fork where available). The session record carries the
+child's PID, so ``stop`` works even from a different terminal /
+invocation than the one that started the session: it sends SIGTERM to
+the flow process and marks the session stopped, and the owning
+:meth:`Orchestrator.run` respects that mark instead of overwriting it
+with a failure when its child dies.
 """
 
 from __future__ import annotations
 
 import json
+import multiprocessing
+import os
+import signal
 import subprocess
 import threading
 import uuid
@@ -32,6 +40,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict, dataclass, field, replace
 from datetime import datetime, timezone
 from pathlib import Path
+from queue import Empty
 from typing import Callable, Optional
 
 from . import agent, prompts
@@ -61,6 +70,25 @@ def _truncate(text: str) -> str:
     return text[:MAX_RESULT_CHARS] + "\n... [truncated]"
 
 
+def _mp_context():
+    """Fork where available (children inherit flows, no pickling)."""
+    try:
+        return multiprocessing.get_context("fork")
+    except ValueError:  # pragma: no cover - non-Unix fallback
+        return multiprocessing.get_context()
+
+
+def _session_child_main(
+    session: "Session", config: Config, flow: Flow, queue
+) -> None:
+    """Child-process entry point: run the flow, report via the queue."""
+    try:
+        result = flow(session, config)
+        queue.put({"status": "done", "result": result or ""})
+    except BaseException as exc:  # the parent turns this into data
+        queue.put({"status": "failed", "error": f"{type(exc).__name__}: {exc}"})
+
+
 # ---------------------------------------------------------------------------
 # Sessions and their persistent store
 # ---------------------------------------------------------------------------
@@ -80,6 +108,7 @@ class Session:
     status: str = "queued"
     result: Optional[str] = None
     error: Optional[str] = None
+    pid: Optional[int] = None
     cleaned: bool = False
     created_at: str = ""
     started_at: Optional[str] = None
@@ -101,6 +130,10 @@ class SessionStore:
         self.repo = Path(repo)
         self.path = self.repo / ".swarm" / "sessions.json"
         self._lock = threading.Lock()
+
+    @property
+    def log_dir(self) -> Path:
+        return self.path.parent / "logs"
 
     def _load(self) -> dict[str, Session]:
         try:
@@ -263,10 +296,15 @@ class Orchestrator:
         repo: str | Path,
         config: Config,
         flows: Optional[dict[str, Flow]] = None,
+        in_process: bool = False,
     ) -> None:
         self.repo = Path(repo).resolve()
         self.config = config
         self.flows = flows if flows is not None else DEFAULT_FLOWS
+        # in_process exists for tests and embeddings that need to
+        # observe a flow's side effects directly; the CLI always runs
+        # flows in child processes so they can be stopped mid-run.
+        self.in_process = in_process
         self.store = SessionStore(self.repo)
         self.worktrees = WorktreeManager(self.repo)
 
@@ -311,15 +349,75 @@ class Orchestrator:
         session.status = "running"
         session.started_at = _now()
         self.store.upsert(session)
-        try:
-            result = self.flows[session.kind](session, self._config_for(session))
-            session.result = _truncate(result or "")
-            session.status = "done"
-        except Exception as exc:  # a flow failure is data, not a crash
-            session.error = str(exc)
-            session.status = "failed"
+
+        if self.in_process:
+            try:
+                result = self.flows[session.kind](
+                    session, self._config_for(session)
+                )
+                session.result = _truncate(result or "")
+                session.status = "done"
+            except Exception as exc:  # a flow failure is data, not a crash
+                session.error = str(exc)
+                session.status = "failed"
+            session.finished_at = _now()
+            self.store.upsert(session)
+            self._write_log(session)
+            return session
+
+        ctx = _mp_context()
+        queue = ctx.Queue()
+        proc = ctx.Process(
+            target=_session_child_main,
+            args=(
+                session,
+                self._config_for(session),
+                self.flows[session.kind],
+                queue,
+            ),
+        )
+        proc.start()
+        session.pid = proc.pid
+        self.store.upsert(session)
+
+        outcome: Optional[dict] = None
+        while proc.is_alive():
+            try:
+                outcome = queue.get(timeout=0.05)
+                break
+            except Empty:
+                pass
+        proc.join(timeout=5)
+        if outcome is None:
+            try:
+                outcome = queue.get_nowait()
+            except Empty:
+                outcome = None
+        session.pid = None
+
+        if outcome is not None:
+            if outcome["status"] == "done":
+                session.result = _truncate(outcome.get("result") or "")
+                session.status = "done"
+            else:
+                session.error = outcome.get("error") or "flow failed"
+                session.status = "failed"
+        else:
+            # No result from the child: either it was stopped from
+            # another invocation (respect that mark) or it died.
+            fresh = self.store.get(session_id)
+            if fresh.status == "stopped":
+                session.status = "stopped"
+                session.error = fresh.error
+            else:
+                session.error = (
+                    "flow process exited without a result "
+                    f"(exit code {proc.exitcode})"
+                )
+                session.status = "failed"
         session.finished_at = _now()
         self.store.upsert(session)
+        self._write_log(session)
         return session
 
     def run_all(self, max_workers: int = 4) -> list[Session]:
@@ -331,16 +429,27 @@ class Orchestrator:
 
     def stop(self, session_id: str) -> Session:
         session = self.store.get(session_id)
-        if session.status == "running":
-            raise SwarmError(
-                f"session {session_id} is running; phase 1 cannot stop a "
-                "running flow - wait for it to finish"
-            )
         if session.status in TERMINAL_STATUSES:
             raise SwarmError(
                 f"session {session_id} is already {session.status}"
             )
+        if session.status == "running":
+            if not session.pid:
+                raise SwarmError(
+                    f"session {session_id} is running without a recorded "
+                    "pid; it cannot be stopped from here"
+                )
+            try:
+                os.kill(session.pid, signal.SIGTERM)
+            except ProcessLookupError:
+                pass  # already gone - still mark it stopped
+            except PermissionError as exc:
+                raise SwarmError(
+                    f"cannot signal session {session_id} (pid "
+                    f"{session.pid}): {exc}"
+                ) from exc
         session.status = "stopped"
+        session.pid = None
         session.finished_at = _now()
         self.store.upsert(session)
         return session
@@ -365,6 +474,9 @@ class Orchestrator:
     def list(self) -> list[Session]:
         return self.store.all()
 
+    def log_path(self, session: Session) -> Path:
+        return self.store.log_dir / f"{session.id}.log"
+
     # -- internals -----------------------------------------------------------
 
     def _config_for(self, session: Session) -> Config:
@@ -374,3 +486,28 @@ class Orchestrator:
         return replace(
             self.config, peers=[session.peer], auto_discover=False
         )
+
+    def _write_log(self, session: Session) -> None:
+        try:
+            self.store.log_dir.mkdir(parents=True, exist_ok=True)
+            lines = [
+                f"session  : {session.id}",
+                f"kind     : {session.kind}",
+                f"peer     : {session.peer or '(swarm)'}",
+                f"branch   : {session.branch}",
+                f"worktree : {session.worktree}",
+                f"created  : {session.created_at}",
+                f"started  : {session.started_at}",
+                f"finished : {session.finished_at}",
+                f"status   : {session.status}",
+                "",
+            ]
+            if session.result:
+                lines += ["--- result ---", session.result, ""]
+            if session.error:
+                lines += ["--- error ---", session.error, ""]
+            self.log_path(session).write_text(
+                "\n".join(lines), encoding="utf-8"
+            )
+        except OSError:
+            pass  # a log must never fail the session itself

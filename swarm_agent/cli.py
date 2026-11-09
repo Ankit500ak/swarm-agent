@@ -93,9 +93,13 @@ def _build_parser() -> argparse.ArgumentParser:
     p_list = sess_sub.add_parser("list", help="list sessions for a repository")
     p_list.add_argument("--repo", default=".", help="repository root (default: cwd)")
 
-    p_stop = sess_sub.add_parser("stop", help="stop a queued session")
+    p_stop = sess_sub.add_parser("stop", help="stop a queued or running session")
     p_stop.add_argument("id", help="session id")
     p_stop.add_argument("--repo", default=".", help="repository root (default: cwd)")
+
+    p_show = sess_sub.add_parser("show", help="show one session in full")
+    p_show.add_argument("id", help="session id")
+    p_show.add_argument("--repo", default=".", help="repository root (default: cwd)")
 
     p_clean = sess_sub.add_parser("clean", help="remove a finished session's worktree")
     p_clean.add_argument("id", help="session id")
@@ -203,7 +207,7 @@ def _print_session(session) -> None:
 
 def _cmd_sessions(args: argparse.Namespace) -> int:
     if not getattr(args, "sessions_command", None):
-        print("usage: swarm-agent sessions {spawn|run|list|stop|clean}",
+        print("usage: swarm-agent sessions {spawn|run|list|stop|show|clean}",
               file=sys.stderr)
         return 2
     config = _config_from_args(args)
@@ -235,6 +239,24 @@ def _cmd_sessions(args: argparse.Namespace) -> int:
         return 0
     if args.sessions_command == "stop":
         _print_session(orch.stop(args.id))
+        return 0
+    if args.sessions_command == "show":
+        session = orch.get(args.id)
+        print(f"id       : {session.id}")
+        print(f"kind     : {session.kind}")
+        print(f"status   : {session.status}")
+        print(f"peer     : {session.peer or '(swarm)'}")
+        print(f"branch   : {session.branch}")
+        print(f"worktree : {session.worktree}")
+        print(f"created  : {session.created_at}")
+        print(f"started  : {session.started_at or '-'}")
+        print(f"finished : {session.finished_at or '-'}")
+        print(f"log      : {orch.log_path(session)}")
+        if session.error:
+            print(f"error    : {session.error}")
+        if session.result:
+            print("\n--- result ---")
+            print(session.result)
         return 0
     if args.sessions_command == "clean":
         _print_session(orch.clean(args.id, delete_branch=args.delete_branch))
